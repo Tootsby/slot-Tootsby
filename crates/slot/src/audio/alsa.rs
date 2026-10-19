@@ -192,73 +192,34 @@ impl AudioSink for AlsaSink {
     }
 }
 
-struct Playback {
+/// The device side of the output thread: ALSA here, a stand-in in the tests below.
+trait Output {
+    fn open(&mut self, rate: u32) -> Result<(), AudioError>;
+    fn is_open(&self) -> bool;
+    /// One period, `PERIOD_FRAMES` frames. False once the device is lost for good.
+    fn write(&mut self, buf: &[i16]) -> bool;
+    fn release(&mut self);
+}
+
+struct AlsaOutput {
     alsa: Alsa,
     pcm: Option<*mut c_void>,
-    rate: u32,
-    failing: bool,
 }
 
-fn play(ring: &Arc<Ring>, sample_rate: u32) -> Result<Playback, AudioError> {
-    let alsa = Alsa::load()?;
-    let pcm = match alsa.open_pcm(sample_rate) {
-        Ok(pcm) => Some(pcm),
-        Err(e) => {
-            eprintln!("slot: audio: {e}, retrying");
-            None
-        }
-    };
-    ring.reopen(sample_rate);
-    Ok(Playback {
-        alsa,
-        pcm,
-        rate: sample_rate,
-        failing: pcm.is_none(),
-    })
-}
-
-impl Playback {
-    fn run(&mut self, ring: &Ring, stop: &AtomicBool) {
-        let mut buf = vec![0i16; PERIOD_FRAMES * CHANNELS as usize];
-        let span = Duration::from_secs_f64(PERIOD_FRAMES as f64 / self.rate as f64);
-        let mut silence = Silence::new(RELEASE_AFTER);
-        let mut pace = Pacer::new(span);
-        while !stop.load(Ordering::Relaxed) {
-            ring.fill(&mut buf);
-            let hold = silence.hear(&buf, span);
-            match (self.pcm, hold) {
-                (Some(_), false) => {
-                    self.release();
-                    eprintln!("slot: audio released after silence");
-                }
-                (None, true) => match self.alsa.open_pcm(self.rate) {
-                    Ok(pcm) => {
-                        eprintln!("slot: audio reopened at {:.1} ms", crate::boot_time::ms());
-                        self.pcm = Some(pcm);
-                        self.failing = false;
-                    }
-                    Err(e) => {
-                        if !self.failing {
-                            eprintln!("slot: audio: {e}, retrying");
-                            self.failing = true;
-                        }
-                    }
-                },
-                _ => {}
-            }
-            match self.pcm {
-                Some(pcm) => {
-                    pace.reset();
-                    if !self.write(pcm, &buf) {
-                        return;
-                    }
-                }
-                None => std::thread::sleep(pace.wait(Instant::now())),
-            }
-        }
+impl Output for AlsaOutput {
+    fn open(&mut self, rate: u32) -> Result<(), AudioError> {
+        self.pcm = Some(self.alsa.open_pcm(rate)?);
+        Ok(())
     }
 
-    fn write(&self, pcm: *mut c_void, buf: &[i16]) -> bool {
+    fn is_open(&self) -> bool {
+        self.pcm.is_some()
+    }
+
+    fn write(&mut self, buf: &[i16]) -> bool {
+        let Some(pcm) = self.pcm else {
+            return false;
+        };
         let mut written = 0;
         while written < PERIOD_FRAMES {
             let at = written * CHANNELS as usize;
@@ -292,8 +253,156 @@ impl Playback {
     }
 }
 
-impl Drop for Playback {
+impl Drop for AlsaOutput {
     fn drop(&mut self) {
         self.release();
+    }
+}
+
+struct Playback<O: Output> {
+    out: O,
+    rate: u32,
+    failing: bool,
+}
+
+fn play(ring: &Arc<Ring>, sample_rate: u32) -> Result<Playback<AlsaOutput>, AudioError> {
+    let mut out = AlsaOutput {
+        alsa: Alsa::load()?,
+        pcm: None,
+    };
+    let failing = match out.open(sample_rate) {
+        Ok(()) => false,
+        Err(e) => {
+            eprintln!("slot: audio: {e}, retrying");
+            true
+        }
+    };
+    ring.reopen(sample_rate);
+    Ok(Playback {
+        out,
+        rate: sample_rate,
+        failing,
+    })
+}
+
+impl<O: Output> Playback<O> {
+    fn run(&mut self, ring: &Ring, stop: &AtomicBool) {
+        let mut buf = vec![0i16; PERIOD_FRAMES * CHANNELS as usize];
+        let span = Duration::from_secs_f64(PERIOD_FRAMES as f64 / self.rate as f64);
+        let mut silence = Silence::new(RELEASE_AFTER);
+        let mut pace = Pacer::new(span);
+        while !stop.load(Ordering::Relaxed) {
+            ring.fill(&mut buf);
+            let hold = silence.hear(&buf, span);
+            match (self.out.is_open(), hold) {
+                (true, false) => {
+                    self.out.release();
+                    eprintln!("slot: audio released after silence");
+                }
+                (false, true) => match self.out.open(self.rate) {
+                    Ok(()) => {
+                        eprintln!("slot: audio reopened at {:.1} ms", crate::boot_time::ms());
+                        self.failing = false;
+                        if !self.prime() {
+                            return;
+                        }
+                    }
+                    Err(e) => {
+                        if !self.failing {
+                            eprintln!("slot: audio: {e}, retrying");
+                            self.failing = true;
+                        }
+                    }
+                },
+                _ => {}
+            }
+            if self.out.is_open() {
+                pace.reset();
+                if !self.out.write(&buf) {
+                    return;
+                }
+            } else {
+                std::thread::sleep(pace.wait(Instant::now()));
+            }
+        }
+    }
+
+    /// A device opened after silence takes a whole buffer before it plays. Give it silence for
+    /// that, the way the first open primes the ring, so it does not take that buffer from the
+    /// sound queued behind this period: that sound is the cushion against a late frame.
+    fn prime(&mut self) -> bool {
+        let silence = vec![0i16; PERIOD_FRAMES * CHANNELS as usize];
+        let periods = self.rate as usize * LATENCY_US as usize / 1_000_000 / PERIOD_FRAMES;
+        (0..periods).all(|_| self.out.write(&silence))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::audio::ring_capacity;
+
+    /// What LATENCY_US asks ALSA for at 48 kHz.
+    const BUFFER_FRAMES: usize = 1920;
+
+    /// Takes periods into its buffer, as a newly opened ALSA device does, and reports full at
+    /// the point ALSA would start playing, which ends the run.
+    struct Buffered {
+        open: bool,
+        took: Vec<i16>,
+    }
+
+    impl Output for Buffered {
+        fn open(&mut self, _rate: u32) -> Result<(), AudioError> {
+            self.open = true;
+            Ok(())
+        }
+
+        fn is_open(&self) -> bool {
+            self.open
+        }
+
+        fn write(&mut self, buf: &[i16]) -> bool {
+            self.took.extend_from_slice(buf);
+            self.took.len() / (CHANNELS as usize) < BUFFER_FRAMES
+        }
+
+        fn release(&mut self) {
+            self.open = false;
+        }
+    }
+
+    #[test]
+    fn a_device_reopened_after_silence_fills_up_on_silence_and_leaves_the_cushion() {
+        let rate = 48_000;
+        let ring = Ring::new(ring_capacity(rate));
+        let cushion = ring.capacity_frames() / 2;
+        let sound: Vec<i16> = (0..cushion * 2).map(|i| 1 + (i % 1000) as i16).collect();
+        ring.push(&sound);
+        let mut playback = Playback {
+            out: Buffered {
+                open: false,
+                took: Vec::new(),
+            },
+            rate,
+            failing: false,
+        };
+        playback.run(&ring, &AtomicBool::new(false));
+        assert_eq!(
+            ring.queued_frames(),
+            cushion - PERIOD_FRAMES,
+            "the reopened device filled its buffer from the cushion instead of from silence"
+        );
+        let took = &playback.out.took;
+        let quiet = took.len() - PERIOD_FRAMES * CHANNELS as usize;
+        assert!(
+            took[..quiet].iter().all(|&s| s == 0),
+            "the device was given sound before its silence"
+        );
+        assert_eq!(
+            &took[quiet..],
+            &sound[..PERIOD_FRAMES * CHANNELS as usize],
+            "the sound that woke the device does not follow the silence straight on"
+        );
     }
 }
