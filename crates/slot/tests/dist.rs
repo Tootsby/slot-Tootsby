@@ -42,7 +42,13 @@ fn ensure_leaves_existing_content_alone() {
 #[test]
 fn a_booted_app_root_has_the_same_folders() {
     let d = common::tmp_root_with_carts(&["Emerald"]);
+    let _ = slot::app::App::boot(d.path());
     for name in slot::root::DIRS {
         assert!(d.path().join(name).is_dir(), "app root is missing {name}");
+    }
+    for (rel, body) in slot::root::README_FILES {
+        let text = std::fs::read_to_string(d.path().join(rel))
+            .unwrap_or_else(|e| panic!("missing {rel}: {e}"));
+        assert_eq!(text, body, "unexpected contents in {rel}");
     }
 }

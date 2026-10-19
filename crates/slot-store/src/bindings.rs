@@ -188,10 +188,14 @@ pub enum GameButton {
     R,
     TurboA,
     TurboB,
+    AltA,
+    AltB,
+    AltL,
+    AltR,
 }
 
 impl GameButton {
-    pub const ALL: [GameButton; 12] = [
+    pub const ALL: [GameButton; 16] = [
         GameButton::Up,
         GameButton::Down,
         GameButton::Left,
@@ -204,9 +208,13 @@ impl GameButton {
         GameButton::R,
         GameButton::TurboA,
         GameButton::TurboB,
+        GameButton::AltA,
+        GameButton::AltB,
+        GameButton::AltL,
+        GameButton::AltR,
     ];
 
-    const GAME_BOY: [GameButton; 10] = [
+    const GAME_BOY: [GameButton; 12] = [
         GameButton::Up,
         GameButton::Down,
         GameButton::Left,
@@ -217,6 +225,8 @@ impl GameButton {
         GameButton::Start,
         GameButton::TurboA,
         GameButton::TurboB,
+        GameButton::AltA,
+        GameButton::AltB,
     ];
 
     pub fn of(platform: Platform) -> &'static [GameButton] {
@@ -240,6 +250,10 @@ impl GameButton {
             GameButton::R => "R Button",
             GameButton::TurboA => "Turbo A",
             GameButton::TurboB => "Turbo B",
+            GameButton::AltA => "Alt A",
+            GameButton::AltB => "Alt B",
+            GameButton::AltL => "Alt L",
+            GameButton::AltR => "Alt R",
         }
     }
 
@@ -257,23 +271,28 @@ impl GameButton {
             GameButton::R => "r",
             GameButton::TurboA => "turbo_a",
             GameButton::TurboB => "turbo_b",
+            GameButton::AltA => "alt_a",
+            GameButton::AltB => "alt_b",
+            GameButton::AltL => "alt_l",
+            GameButton::AltR => "alt_r",
         }
     }
 
-    fn default_device(self) -> Device {
+    fn default_binding(self) -> Option<Binding> {
         match self {
-            GameButton::Up => Device::Up,
-            GameButton::Down => Device::Down,
-            GameButton::Left => Device::Left,
-            GameButton::Right => Device::Right,
-            GameButton::A => Device::A,
-            GameButton::B => Device::B,
-            GameButton::Select => Device::Select,
-            GameButton::Start => Device::Start,
-            GameButton::L => Device::L1,
-            GameButton::R => Device::R1,
-            GameButton::TurboA => Device::X,
-            GameButton::TurboB => Device::Y,
+            GameButton::Up => Binding::plain(Device::Up),
+            GameButton::Down => Binding::plain(Device::Down),
+            GameButton::Left => Binding::plain(Device::Left),
+            GameButton::Right => Binding::plain(Device::Right),
+            GameButton::A => Binding::plain(Device::A),
+            GameButton::B => Binding::plain(Device::B),
+            GameButton::Select => Binding::plain(Device::Select),
+            GameButton::Start => Binding::plain(Device::Start),
+            GameButton::L => Binding::plain(Device::L1),
+            GameButton::R => Binding::plain(Device::R1),
+            GameButton::TurboA => Binding::plain(Device::X),
+            GameButton::TurboB => Binding::plain(Device::Y),
+            GameButton::AltA | GameButton::AltB | GameButton::AltL | GameButton::AltR => None,
         }
     }
 
@@ -286,6 +305,7 @@ impl GameButton {
 pub enum Shortcut {
     SaveState,
     LoadState,
+    Screenshot,
     BrightnessUp,
     BrightnessDown,
     BlueLightDown,
@@ -300,9 +320,10 @@ pub enum Shortcut {
 }
 
 impl Shortcut {
-    pub const ALL: [Shortcut; 13] = [
+    pub const ALL: [Shortcut; 14] = [
         Shortcut::SaveState,
         Shortcut::LoadState,
+        Shortcut::Screenshot,
         Shortcut::BrightnessUp,
         Shortcut::BrightnessDown,
         Shortcut::BlueLightDown,
@@ -320,6 +341,7 @@ impl Shortcut {
         match self {
             Shortcut::SaveState => "Save State",
             Shortcut::LoadState => "Load State",
+            Shortcut::Screenshot => "Screenshot",
             Shortcut::BrightnessUp => "Brightness Up",
             Shortcut::BrightnessDown => "Brightness Down",
             Shortcut::BlueLightDown => "Blue Light Down",
@@ -338,6 +360,7 @@ impl Shortcut {
         match self {
             Shortcut::SaveState => "save_state",
             Shortcut::LoadState => "load_state",
+            Shortcut::Screenshot => "screenshot",
             Shortcut::BrightnessUp => "brightness_up",
             Shortcut::BrightnessDown => "brightness_down",
             Shortcut::BlueLightDown => "blue_light_down",
@@ -357,6 +380,7 @@ impl Shortcut {
         match self {
             Shortcut::SaveState => select(Device::R1),
             Shortcut::LoadState => select(Device::L1),
+            Shortcut::Screenshot => select(Device::X),
             Shortcut::BrightnessUp => select(Device::Up),
             Shortcut::BrightnessDown => select(Device::Down),
             Shortcut::BlueLightDown => select(Device::Left),
@@ -378,13 +402,13 @@ impl Shortcut {
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Controls {
-    game: [Option<Binding>; 12],
+    game: [Option<Binding>; 16],
 }
 
 impl Default for Controls {
     fn default() -> Self {
         Controls {
-            game: GameButton::ALL.map(|g| Binding::plain(g.default_device())),
+            game: GameButton::ALL.map(GameButton::default_binding),
         }
     }
 }
@@ -421,7 +445,7 @@ impl Controls {
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct ShortcutKeys {
-    keys: [Option<Binding>; 13],
+    keys: [Option<Binding>; 14],
 }
 
 impl Default for ShortcutKeys {

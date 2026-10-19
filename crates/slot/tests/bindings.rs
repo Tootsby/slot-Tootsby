@@ -224,6 +224,10 @@ fn a_game_boy_has_no_l_or_r_rows() {
     let hidden = a.in_game_hidden();
     assert!(hidden.contains(&QuickRow::GameL));
     assert!(hidden.contains(&QuickRow::GameR));
+    assert!(hidden.contains(&QuickRow::GameAltL));
+    assert!(hidden.contains(&QuickRow::GameAltR));
+    assert!(!hidden.contains(&QuickRow::GameAltA));
+    assert!(!hidden.contains(&QuickRow::GameAltB));
 }
 
 const FRAME: Millis = 16;

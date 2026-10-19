@@ -27,3 +27,22 @@ fn a_short_frame_is_not_a_thumbnail() {
     assert!(thumb::png(&[]).is_none());
     assert!(thumb::png(&vec![0u8; (GBA_W * GBA_H * 4) as usize - 4]).is_none());
 }
+
+#[test]
+fn crop_picture_extracts_the_centred_gb_frame_from_a_gba_canvas() {
+    let mut frame = vec![0u8; (GBA_W * GBA_H * 4) as usize];
+    for y in 8..(8 + 144) {
+        for x in 40..(40 + 160) {
+            let idx = ((y * GBA_W + x) * 4) as usize;
+            frame[idx..idx + 4].copy_from_slice(&[0x10, 0x80, 0xf0, 0xff]);
+        }
+    }
+    let full = thumb::png(&frame).expect("encode full");
+    let cropped = thumb::crop_picture(&full, (160, 144)).expect("crop gb");
+    let (rgb, w, h) = decode(&cropped);
+    assert_eq!((w, h), (160, 144));
+    assert!(
+        rgb.chunks_exact(3).all(|px| px == [0xf0, 0x80, 0x10]),
+        "cropped GB screenshot included black border pixels"
+    );
+}

@@ -73,7 +73,14 @@ fn every_option_slot_sets_is_one_the_core_declares() {
                     {
                         let mut core = LibretroCore::open(&path).expect("open core");
                         slot::core::apply_core_options(
-                            &mut core, which, platform, serial, bios, colour, palette,
+                            &mut core,
+                            which,
+                            platform,
+                            serial,
+                            bios,
+                            colour,
+                            slot_store::Blending::Off,
+                            palette,
                         );
                         every_option_is_one_the_core_has(
                             &core,
@@ -173,6 +180,7 @@ fn a_named_palette_forces_a_plain_game_boy_without_hardware_presets() {
         "auto",
         false,
         false,
+        slot_store::Blending::Off,
         Some(p),
     );
     let set: std::collections::HashMap<String, String> = core.options().into_iter().collect();
@@ -198,6 +206,7 @@ fn a_named_palette_forces_a_plain_game_boy_without_hardware_presets() {
         "auto",
         false,
         false,
+        slot_store::Blending::Off,
         None,
     );
     let set: std::collections::HashMap<String, String> = core.options().into_iter().collect();
@@ -273,6 +282,7 @@ fn mgba_always_answers_the_game_boy_player_logo() {
             "auto",
             false,
             false,
+            slot_store::Blending::Off,
             palette,
         );
         let set: std::collections::HashMap<String, String> = core.options().into_iter().collect();

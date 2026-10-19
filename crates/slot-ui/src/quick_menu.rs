@@ -84,10 +84,19 @@ pub enum QuickRow {
     ControlsShelf,
     ControlsInGame,
     LeftStick,
+    GbaBlending,
+    GbcBlending,
+    GbBlending,
+    Blending,
+    GameAltA,
+    GameAltB,
+    GameAltL,
+    GameAltR,
+    ScScreenshot,
 }
 
 impl QuickRow {
-    pub const ALL: [QuickRow; 74] = [
+    pub const ALL: [QuickRow; 83] = [
         QuickRow::FastForward,
         QuickRow::FastForwardSound,
         QuickRow::Screen,
@@ -162,6 +171,15 @@ impl QuickRow {
         QuickRow::ControlsShelf,
         QuickRow::ControlsInGame,
         QuickRow::LeftStick,
+        QuickRow::GbaBlending,
+        QuickRow::GbcBlending,
+        QuickRow::GbBlending,
+        QuickRow::Blending,
+        QuickRow::GameAltA,
+        QuickRow::GameAltB,
+        QuickRow::GameAltL,
+        QuickRow::GameAltR,
+        QuickRow::ScScreenshot,
     ];
 
     pub const MAIN: [QuickRow; 5] = [
@@ -194,7 +212,7 @@ impl QuickRow {
         QuickRow::ShelfFavorite,
     ];
 
-    pub const CONTROLS: [QuickRow; 12] = [
+    pub const CONTROLS: [QuickRow; 16] = [
         QuickRow::GameUp,
         QuickRow::GameDown,
         QuickRow::GameLeft,
@@ -207,11 +225,16 @@ impl QuickRow {
         QuickRow::GameR,
         QuickRow::GameTurboA,
         QuickRow::GameTurboB,
+        QuickRow::GameAltA,
+        QuickRow::GameAltB,
+        QuickRow::GameAltL,
+        QuickRow::GameAltR,
     ];
 
-    pub const SHORTCUTS: [QuickRow; 13] = [
+    pub const SHORTCUTS: [QuickRow; 14] = [
         QuickRow::ScSave,
         QuickRow::ScLoad,
+        QuickRow::ScScreenshot,
         QuickRow::ScBrightUp,
         QuickRow::ScBrightDown,
         QuickRow::ScBlueDown,
@@ -228,21 +251,24 @@ impl QuickRow {
     pub const SCREEN: [QuickRow; 3] =
         [QuickRow::ScreenGba, QuickRow::ScreenGbc, QuickRow::ScreenGb];
 
-    pub const SCREEN_GBA: [QuickRow; 3] = [
+    pub const SCREEN_GBA: [QuickRow; 4] = [
         QuickRow::GbaShader,
         QuickRow::GbaColourCorrection,
+        QuickRow::GbaBlending,
         QuickRow::GbaBezel,
     ];
 
-    pub const SCREEN_GBC: [QuickRow; 3] = [
+    pub const SCREEN_GBC: [QuickRow; 4] = [
         QuickRow::GbcShader,
         QuickRow::GbcColourCorrection,
+        QuickRow::GbcBlending,
         QuickRow::GbcBezel,
     ];
 
-    pub const SCREEN_GB: [QuickRow; 4] = [
+    pub const SCREEN_GB: [QuickRow; 5] = [
         QuickRow::GbShader,
         QuickRow::GbColourCorrection,
+        QuickRow::GbBlending,
         QuickRow::GbPalettes,
         QuickRow::GbBezel,
     ];
@@ -270,9 +296,10 @@ impl QuickRow {
         QuickRow::PlayControls,
     ];
 
-    pub const PLAY_SCREEN: [QuickRow; 4] = [
+    pub const PLAY_SCREEN: [QuickRow; 5] = [
         QuickRow::Shader,
         QuickRow::ColourCorrection,
+        QuickRow::Blending,
         QuickRow::Palette,
         QuickRow::Bezel,
     ];
@@ -284,14 +311,17 @@ impl QuickRow {
     pub fn page(self) -> &'static [QuickRow] {
         match self {
             QuickRow::ScreenGba | QuickRow::ScreenGbc | QuickRow::ScreenGb => &QuickRow::SCREEN,
-            QuickRow::GbaShader | QuickRow::GbaColourCorrection | QuickRow::GbaBezel => {
-                &QuickRow::SCREEN_GBA
-            }
-            QuickRow::GbcShader | QuickRow::GbcColourCorrection | QuickRow::GbcBezel => {
-                &QuickRow::SCREEN_GBC
-            }
+            QuickRow::GbaShader
+            | QuickRow::GbaColourCorrection
+            | QuickRow::GbaBlending
+            | QuickRow::GbaBezel => &QuickRow::SCREEN_GBA,
+            QuickRow::GbcShader
+            | QuickRow::GbcColourCorrection
+            | QuickRow::GbcBlending
+            | QuickRow::GbcBezel => &QuickRow::SCREEN_GBC,
             QuickRow::GbShader
             | QuickRow::GbColourCorrection
+            | QuickRow::GbBlending
             | QuickRow::GbPalettes
             | QuickRow::GbBezel => &QuickRow::SCREEN_GB,
             QuickRow::FastForward
@@ -320,9 +350,11 @@ impl QuickRow {
             r if r.game_button().is_some() => &QuickRow::CONTROLS,
             r if r.shortcut().is_some() => &QuickRow::SHORTCUTS,
             r if r.carousel_action().is_some() => &QuickRow::SHELF_KEYS,
-            QuickRow::Shader | QuickRow::ColourCorrection | QuickRow::Palette | QuickRow::Bezel => {
-                &QuickRow::PLAY_SCREEN
-            }
+            QuickRow::Shader
+            | QuickRow::ColourCorrection
+            | QuickRow::Blending
+            | QuickRow::Palette
+            | QuickRow::Bezel => &QuickRow::PLAY_SCREEN,
             _ => &QuickRow::MAIN,
         }
     }
@@ -414,6 +446,9 @@ impl QuickRow {
             QuickRow::GbaColourCorrection => "Color Correction",
             QuickRow::GbColourCorrection => "Color Correction",
             QuickRow::GbcColourCorrection => "Color Correction",
+            QuickRow::GbaBlending => "Frame Blending",
+            QuickRow::GbBlending => "Frame Blending",
+            QuickRow::GbcBlending => "Frame Blending",
             QuickRow::Game => "Gameplay",
             QuickRow::EjectSave => "Auto Save on Eject",
             QuickRow::Turbo => "Turbo Buttons",
@@ -446,9 +481,14 @@ impl QuickRow {
             | QuickRow::GameL
             | QuickRow::GameR
             | QuickRow::GameTurboA
-            | QuickRow::GameTurboB => self.game_button().map_or("", GameButton::label),
+            | QuickRow::GameTurboB
+            | QuickRow::GameAltA
+            | QuickRow::GameAltB
+            | QuickRow::GameAltL
+            | QuickRow::GameAltR => self.game_button().map_or("", GameButton::label),
             QuickRow::ScSave
             | QuickRow::ScLoad
+            | QuickRow::ScScreenshot
             | QuickRow::ScBrightUp
             | QuickRow::ScBrightDown
             | QuickRow::ScBlueDown
@@ -467,6 +507,7 @@ impl QuickRow {
             QuickRow::PlayGameplay => "Gameplay",
             QuickRow::Shader => "Shader",
             QuickRow::ColourCorrection => "Color Correction",
+            QuickRow::Blending => "Frame Blending",
             QuickRow::Palette => "Palette",
             QuickRow::ScreenGba => "Game Boy Advance",
             QuickRow::ScreenGbc => "Game Boy Color",
@@ -517,6 +558,10 @@ impl QuickRow {
             QuickRow::GameR => GameButton::R,
             QuickRow::GameTurboA => GameButton::TurboA,
             QuickRow::GameTurboB => GameButton::TurboB,
+            QuickRow::GameAltA => GameButton::AltA,
+            QuickRow::GameAltB => GameButton::AltB,
+            QuickRow::GameAltL => GameButton::AltL,
+            QuickRow::GameAltR => GameButton::AltR,
             _ => return None,
         })
     }
@@ -525,6 +570,7 @@ impl QuickRow {
         Some(match self {
             QuickRow::ScSave => Shortcut::SaveState,
             QuickRow::ScLoad => Shortcut::LoadState,
+            QuickRow::ScScreenshot => Shortcut::Screenshot,
             QuickRow::ScBrightUp => Shortcut::BrightnessUp,
             QuickRow::ScBrightDown => Shortcut::BrightnessDown,
             QuickRow::ScBlueDown => Shortcut::BlueLightDown,
@@ -578,6 +624,7 @@ pub enum QuickValue {
     Grid,
     Dot,
     Simpletex,
+    Shimmerless,
     Dark,
     Light,
     Show,
@@ -591,10 +638,12 @@ pub enum QuickValue {
     Min10,
     Min15,
     Min30,
+    Mix,
+    Ghosting,
 }
 
 impl QuickValue {
-    pub const ALL: [QuickValue; 23] = [
+    pub const ALL: [QuickValue; 26] = [
         QuickValue::Speed2,
         QuickValue::Speed3,
         QuickValue::Speed4,
@@ -605,6 +654,7 @@ impl QuickValue {
         QuickValue::Grid,
         QuickValue::Dot,
         QuickValue::Simpletex,
+        QuickValue::Shimmerless,
         QuickValue::Dark,
         QuickValue::Light,
         QuickValue::Show,
@@ -618,15 +668,18 @@ impl QuickValue {
         QuickValue::Min10,
         QuickValue::Min15,
         QuickValue::Min30,
+        QuickValue::Mix,
+        QuickValue::Ghosting,
     ];
 
-    pub const LID_OFF: [QuickValue; 6] = [
+    pub const LID_OFF: [QuickValue; 7] = [
         QuickValue::Min1,
         QuickValue::Min3,
         QuickValue::Min5,
         QuickValue::Min10,
         QuickValue::Min15,
         QuickValue::Min30,
+        QuickValue::Off,
     ];
 
     pub fn index(self) -> usize {
@@ -645,6 +698,7 @@ impl QuickValue {
             QuickValue::Grid => "Grid",
             QuickValue::Dot => "Dot",
             QuickValue::Simpletex => "Simpletex",
+            QuickValue::Shimmerless => "Shimmerless",
             QuickValue::Dark => "Dark",
             QuickValue::Light => "Light",
             QuickValue::Show => "Show",
@@ -658,6 +712,8 @@ impl QuickValue {
             QuickValue::Min10 => "10 min",
             QuickValue::Min15 => "15 min",
             QuickValue::Min30 => "30 min",
+            QuickValue::Mix => "Mix",
+            QuickValue::Ghosting => "LCD Ghosting",
         }
     }
 
@@ -673,6 +729,7 @@ impl QuickValue {
 
     pub fn minutes(self) -> Option<u8> {
         Some(match self {
+            QuickValue::Off => 0,
             QuickValue::Min1 => 1,
             QuickValue::Min3 => 3,
             QuickValue::Min5 => 5,

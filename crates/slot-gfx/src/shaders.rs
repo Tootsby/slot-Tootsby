@@ -78,6 +78,21 @@ void main() {
     vec3 c = texture2D(u_game, uv).rgb;
     bool inside = all(greaterThanEqual(uv, u_pic.xy)) && all(lessThan(uv, u_pic.zw));
     if (!inside) {
+    } else if (u_mode > 4.5) {
+        vec2 hp = 0.5 * u_uv.zw * u_src / (u_rect.zw * u_fbo);
+        vec2 p = uv * u_src - 0.5;
+        vec2 i = floor(p);
+        vec2 s = fract(p);
+        vec2 t = clamp((s - (0.5 - hp)) / (2.0 * hp), 0.0, 1.0);
+        vec2 uv00 = (i + vec2(0.5, 0.5)) / u_src;
+        vec2 uv10 = (i + vec2(1.5, 0.5)) / u_src;
+        vec2 uv01 = (i + vec2(0.5, 1.5)) / u_src;
+        vec2 uv11 = (i + vec2(1.5, 1.5)) / u_src;
+        vec3 c00 = texture2D(u_game, uv00).rgb;
+        vec3 c10 = texture2D(u_game, uv10).rgb;
+        vec3 c01 = texture2D(u_game, uv01).rgb;
+        vec3 c11 = texture2D(u_game, uv11).rgb;
+        c = mix(mix(c00, c10, t.x), mix(c01, c11, t.x), t.y);
     } else if (u_mode > 3.5) {
         c = pow(c, vec3(1.05));
         vec2 d = abs(f - 0.5);

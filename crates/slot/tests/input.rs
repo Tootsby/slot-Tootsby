@@ -163,3 +163,34 @@ fn turbo_a_and_b_fire_from_whatever_they_are_bound_to() {
     pad.apply(Action::GbaDown(Btn::L2));
     assert_eq!(pad.mask(&c).turbo(0).0, ButtonMask::A);
 }
+
+#[test]
+fn alt_buttons_press_the_same_console_buttons_as_the_primary_ones() {
+    use slot::input::Pad;
+    use slot_input::Action;
+    use slot_retro::ButtonMask;
+    use slot_store::{Binding, Controls, Device, GameButton};
+    let mut c = Controls::default();
+    c.set_game(GameButton::TurboA, None);
+    c.set_game(GameButton::TurboB, None);
+    c.set_game(GameButton::AltA, Binding::plain(Device::X));
+    c.set_game(GameButton::AltB, Binding::plain(Device::Y));
+    c.set_game(GameButton::AltL, Binding::plain(Device::L2));
+    c.set_game(GameButton::AltR, Binding::plain(Device::R2));
+    let mut pad = Pad::default();
+    for (btn, mask) in [
+        (Btn::A, ButtonMask::A),
+        (Btn::X, ButtonMask::A),
+        (Btn::B, ButtonMask::B),
+        (Btn::Y, ButtonMask::B),
+        (Btn::L1, ButtonMask::L),
+        (Btn::L2, ButtonMask::L),
+        (Btn::R1, ButtonMask::R),
+        (Btn::R2, ButtonMask::R),
+    ] {
+        pad.apply(Action::GbaDown(btn));
+        assert_eq!(pad.mask(&c).0, mask, "{btn:?} did not press {mask:#x}");
+        pad.apply(Action::GbaUp(btn));
+        assert_eq!(pad.mask(&c).0, 0);
+    }
+}

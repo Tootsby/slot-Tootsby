@@ -25,13 +25,17 @@ fn with(modifier: Modifier, button: Device) -> Option<Binding> {
 }
 
 #[test]
-fn a_gba_has_twelve_buttons_and_a_game_boy_ten() {
-    assert_eq!(GameButton::of(Platform::Gba).len(), 12);
-    assert_eq!(GameButton::of(Platform::Gb).len(), 10);
-    assert_eq!(GameButton::of(Platform::Gbc).len(), 10);
+fn a_gba_has_sixteen_buttons_and_a_game_boy_twelve() {
+    assert_eq!(GameButton::of(Platform::Gba).len(), 16);
+    assert_eq!(GameButton::of(Platform::Gb).len(), 12);
+    assert_eq!(GameButton::of(Platform::Gbc).len(), 12);
     assert!(!GameButton::of(Platform::Gb).contains(&GameButton::L));
+    assert!(!GameButton::of(Platform::Gb).contains(&GameButton::AltL));
+    assert!(!GameButton::of(Platform::Gb).contains(&GameButton::AltR));
     assert!(GameButton::of(Platform::Gb).contains(&GameButton::TurboA));
     assert!(GameButton::of(Platform::Gbc).contains(&GameButton::TurboB));
+    assert!(GameButton::of(Platform::Gb).contains(&GameButton::AltA));
+    assert!(GameButton::of(Platform::Gbc).contains(&GameButton::AltB));
 }
 
 #[test]
@@ -43,6 +47,10 @@ fn every_console_button_starts_on_the_device_button_of_its_name() {
     assert_eq!(c.game(GameButton::Select), plain(Device::Select));
     assert_eq!(c.game(GameButton::TurboA), plain(Device::X));
     assert_eq!(c.game(GameButton::TurboB), plain(Device::Y));
+    assert_eq!(c.game(GameButton::AltA), None);
+    assert_eq!(c.game(GameButton::AltB), None);
+    assert_eq!(c.game(GameButton::AltL), None);
+    assert_eq!(c.game(GameButton::AltR), None);
 }
 
 #[test]
@@ -62,6 +70,10 @@ fn the_shortcuts_start_where_they_are_today() {
     );
     assert_eq!(c.get(Shortcut::FastForward), plain(Device::R2));
     assert_eq!(c.get(Shortcut::Rewind), plain(Device::L2));
+    assert_eq!(
+        c.get(Shortcut::Screenshot),
+        with(Modifier::Select, Device::X)
+    );
 }
 
 #[test]

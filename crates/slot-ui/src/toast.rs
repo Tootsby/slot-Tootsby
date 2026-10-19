@@ -10,6 +10,7 @@ use crate::CartFace;
 pub enum Toast {
     StateSaved,
     StateLoaded,
+    ScreenshotSaved,
     NeedsGpsp,
     NoLink,
     LinkEnded,
@@ -22,6 +23,7 @@ pub enum Toast {
     ShaderGrid,
     ShaderDot,
     ShaderSimpletex,
+    ShaderShimmerless,
     CardUnwritable,
     CardRepair,
     CardRepaired,
@@ -30,9 +32,10 @@ pub enum Toast {
 }
 
 impl Toast {
-    const FIXED: [Toast; 18] = [
+    const FIXED: [Toast; 20] = [
         Toast::StateSaved,
         Toast::StateLoaded,
+        Toast::ScreenshotSaved,
         Toast::NeedsGpsp,
         Toast::NoLink,
         Toast::LinkEnded,
@@ -45,6 +48,7 @@ impl Toast {
         Toast::ShaderGrid,
         Toast::ShaderDot,
         Toast::ShaderSimpletex,
+        Toast::ShaderShimmerless,
         Toast::CardUnwritable,
         Toast::CardRepair,
         Toast::CardRepaired,
@@ -88,6 +92,7 @@ impl Toast {
         match self {
             Toast::StateSaved => "State Saved",
             Toast::StateLoaded => "State Loaded",
+            Toast::ScreenshotSaved => "Screenshot Saved",
             Toast::NeedsGpsp => "Please switch to gpSP",
             Toast::NoLink => "No link support",
             Toast::LinkEnded => "Link ended",
@@ -100,6 +105,7 @@ impl Toast {
             Toast::ShaderGrid => "Shader: Grid",
             Toast::ShaderDot => "Shader: Dot",
             Toast::ShaderSimpletex => "Shader: Simpletex",
+            Toast::ShaderShimmerless => "Shader: Shimmerless",
             Toast::CardUnwritable => "Can't write to SD card",
             Toast::CardRepair => "Can't write to SD card",
             Toast::CardRepaired => "SD card repaired",

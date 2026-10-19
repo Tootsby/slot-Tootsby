@@ -2,8 +2,8 @@ mod common;
 
 use common::tmp_root;
 use slot_store::{
-    atomic_write, read_slot_state, write_slot_state, Appearance, BezelPick, GbPalette, Platform,
-    Recent, Shader, SlotState, WallpaperPick, WallpaperTint, FF_SPEEDS, FF_SPEED_DEFAULT,
+    atomic_write, read_slot_state, write_slot_state, Appearance, BezelPick, Blending, GbPalette,
+    Platform, Recent, Shader, SlotState, WallpaperPick, WallpaperTint, FF_SPEEDS, FF_SPEED_DEFAULT,
 };
 use tempfile::tempdir;
 
@@ -203,6 +203,9 @@ fn a_card_from_before_the_settings_keeps_all_its_values() {
             colour_correction_gba: false,
             colour_correction_gb: false,
             colour_correction_gbc: false,
+            blending_gba: Blending::Off,
+            blending_gb: Blending::Off,
+            blending_gbc: Blending::Off,
             shader_gba: Shader::Grid,
             shader_gb: Shader::Simpletex,
             shader_gbc: Shader::Simpletex,
@@ -239,8 +242,11 @@ fn the_quick_menu_settings_round_trip_as_their_own_lines() {
         ff_sound: true,
         colour_correction_gba: true,
         colour_correction_gb: false,
+        blending_gba: Blending::Mix,
+        blending_gb: Blending::Ghosting,
+        blending_gbc: Blending::Mix,
         shader_gba: Shader::Dot,
-        shader_gb: Shader::Off,
+        shader_gb: Shader::Shimmerless,
         eject_save: false,
         turbo: false,
         rewind: false,
@@ -268,8 +274,11 @@ fn the_quick_menu_settings_round_trip_as_their_own_lines() {
         "ff_sound=1",
         "colour_correction_gba=1",
         "colour_correction_gb=0",
+        "blending_gba=mix",
+        "blending_gb=ghosting",
+        "blending_gbc=mix",
         "shader_gba=dot",
-        "shader_gb=off",
+        "shader_gb=shimmerless",
         "eject_save=0",
         "turbo=0",
         "rewind=0",
@@ -560,7 +569,7 @@ fn a_card_from_before_the_gbc_split_starts_gbc_from_the_gb_c_settings() {
 #[test]
 fn lid_power_off_minutes_round_trip_and_drop_a_value_the_menu_does_not_offer() {
     let d = tmp_root();
-    for min in [1, 3, 5, 10, 15, 30] {
+    for min in [0, 1, 3, 5, 10, 15, 30] {
         let s = SlotState {
             lid_off_min: Some(min),
             ..Default::default()

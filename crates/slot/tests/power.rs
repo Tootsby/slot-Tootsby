@@ -433,3 +433,30 @@ fn a_shut_lid_powers_off_after_the_minutes_set_in_the_menu() {
     }
     assert!(a.powering_off());
 }
+
+#[test]
+fn a_shut_lid_with_lid_power_off_disabled_stays_dozing() {
+    let d = tmp_root_with_carts(&["Emerald"]);
+    write_slot_state(
+        d.path(),
+        &SlotState {
+            clock_set: true,
+            lid_off_min: Some(0),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let mut a = boot(d.path());
+    a.set_power(panel(d.path(), Duration::from_secs(1)).0);
+    a.apply(Action::LidClose);
+    for _ in 0..180 {
+        a.update(1.0 / 60.0);
+    }
+    assert!(
+        !a.powering_off(),
+        "lid_off_min=0 (Off) powered off instead of staying in standby"
+    );
+    assert!(matches!(a.phase(), Phase::Doze { .. }));
+    a.apply(Action::LidOpen);
+    assert!(matches!(a.phase(), Phase::Shelf));
+}

@@ -13,7 +13,7 @@ pub const UTC_OFFSET_MAX: i16 = 840;
 
 pub const FF_SPEEDS: [u8; 4] = [2, 3, 4, 6];
 
-pub const LID_OFF_MIN: [u8; 6] = [1, 3, 5, 10, 15, 30];
+pub const LID_OFF_MIN: [u8; 7] = [1, 3, 5, 10, 15, 30, 0];
 
 pub const FF_SPEED_DEFAULT: u8 = 6;
 
@@ -210,6 +210,9 @@ pub struct SlotState {
     pub colour_correction_gba: bool,
     pub colour_correction_gb: bool,
     pub colour_correction_gbc: bool,
+    pub blending_gba: Blending,
+    pub blending_gb: Blending,
+    pub blending_gbc: Blending,
     pub shader_gba: Shader,
     pub shader_gb: Shader,
     pub shader_gbc: Shader,
@@ -268,6 +271,41 @@ impl SlotState {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum Blending {
+    #[default]
+    Off,
+    Mix,
+    Ghosting,
+}
+
+impl Blending {
+    pub const ALL: [Blending; 3] = [Blending::Off, Blending::Mix, Blending::Ghosting];
+    pub const GPSP: [Blending; 2] = [Blending::Off, Blending::Mix];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Blending::Off => "off",
+            Blending::Mix => "mix",
+            Blending::Ghosting => "ghosting",
+        }
+    }
+
+    pub fn parse(name: &str) -> Option<Blending> {
+        Self::ALL.into_iter().find(|b| b.name() == name)
+    }
+
+    pub fn step(self, choices: &[Blending], right: bool) -> Blending {
+        let n = choices.len();
+        let at = choices.iter().position(|&b| b == self).unwrap_or(0);
+        choices[if right {
+            (at + 1) % n
+        } else {
+            (at + n - 1) % n
+        }]
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Shader {
     Off,
@@ -275,11 +313,24 @@ pub enum Shader {
     Grid,
     Dot,
     Simpletex,
+    Shimmerless,
 }
 
 impl Shader {
-    pub const GBA: [Shader; 4] = [Shader::Off, Shader::Lcd3x, Shader::Grid, Shader::Dot];
-    pub const GB: [Shader; 4] = [Shader::Off, Shader::Lcd3x, Shader::Grid, Shader::Simpletex];
+    pub const GBA: [Shader; 5] = [
+        Shader::Off,
+        Shader::Lcd3x,
+        Shader::Grid,
+        Shader::Dot,
+        Shader::Shimmerless,
+    ];
+    pub const GB: [Shader; 5] = [
+        Shader::Off,
+        Shader::Lcd3x,
+        Shader::Grid,
+        Shader::Simpletex,
+        Shader::Shimmerless,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -288,6 +339,7 @@ impl Shader {
             Shader::Grid => "grid",
             Shader::Dot => "dot",
             Shader::Simpletex => "simpletex",
+            Shader::Shimmerless => "shimmerless",
         }
     }
 
@@ -298,6 +350,7 @@ impl Shader {
             Shader::Grid,
             Shader::Dot,
             Shader::Simpletex,
+            Shader::Shimmerless,
         ]
         .into_iter()
         .find(|s| s.name() == name)
@@ -333,6 +386,9 @@ impl Default for SlotState {
             colour_correction_gba: false,
             colour_correction_gb: false,
             colour_correction_gbc: false,
+            blending_gba: Blending::Off,
+            blending_gb: Blending::Off,
+            blending_gbc: Blending::Off,
             shader_gba: Shader::Grid,
             shader_gb: Shader::Simpletex,
             shader_gbc: Shader::Simpletex,
@@ -437,6 +493,9 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         "colour_correction_gbc={}\n",
         s.colour_correction_gbc as u8
     ));
+    text.push_str(&format!("blending_gba={}\n", s.blending_gba.name()));
+    text.push_str(&format!("blending_gb={}\n", s.blending_gb.name()));
+    text.push_str(&format!("blending_gbc={}\n", s.blending_gbc.name()));
     text.push_str(&format!("shader_gbc={}\n", s.shader_gbc.name()));
     text.push_str(&format!("wallpaper_tint={}\n", s.wallpaper_tint.key()));
     text.push_str(&format!("show_recents={}\n", s.show_recents as u8));
@@ -480,6 +539,9 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut colour_correction_gba = None;
     let mut colour_correction_gb = None;
     let mut colour_correction_gbc = None;
+    let mut blending_gba = None;
+    let mut blending_gb = None;
+    let mut blending_gbc = None;
     let mut shader_gba = None;
     let mut shader_gb = None;
     let mut shader_gbc = None;
@@ -522,6 +584,9 @@ fn parse(text: &str) -> Option<SlotState> {
             "colour_correction_gba" => colour_correction_gba = flag(value),
             "colour_correction_gb" => colour_correction_gb = flag(value),
             "colour_correction_gbc" => colour_correction_gbc = flag(value),
+            "blending_gba" => blending_gba = Blending::parse(value),
+            "blending_gb" => blending_gb = Blending::parse(value),
+            "blending_gbc" => blending_gbc = Blending::parse(value),
             "shader_gba" => shader_gba = Shader::parse(value).filter(|s| Shader::GBA.contains(s)),
             "eject_save" => eject_save = flag(value),
             "turbo" => turbo = flag(value),
@@ -571,6 +636,9 @@ fn parse(text: &str) -> Option<SlotState> {
             .or(colour_correction_gb)
             .or(colour_correction)
             .unwrap_or(fallback.colour_correction_gbc),
+        blending_gba: blending_gba.unwrap_or(fallback.blending_gba),
+        blending_gb: blending_gb.unwrap_or(fallback.blending_gb),
+        blending_gbc: blending_gbc.unwrap_or(fallback.blending_gbc),
         shader_gba: shader_gba.unwrap_or(fallback.shader_gba),
         shader_gb: shader_gb.unwrap_or(fallback.shader_gb),
         shader_gbc: shader_gbc.or(shader_gb).unwrap_or(fallback.shader_gbc),

@@ -7,8 +7,8 @@ use slot_input::{Action, Btn, RawEvent, MENU_DOUBLE_TAP_MS, MUTE_CHORD_MS};
 use slot_power::{Battery, Charge, LedState, LidPolicy, Power, RepairResult};
 use slot_retro::LinkChannel;
 use slot_store::{
-    format_stamp, parse_stamp, read_slot_state, scan, write_slot_state, BezelPick, Cart, Core,
-    GbPalette, Platform, Recent, Shader, SlotState, StateEntry, StateRing, WallpaperPick,
+    format_stamp, parse_stamp, read_slot_state, scan, write_slot_state, BezelPick, Blending, Cart,
+    Core, GbPalette, Platform, Recent, Shader, SlotState, StateEntry, StateRing, WallpaperPick,
     WallpaperTint, BLUE_LIGHT_MAX, BRIGHTNESS_MAX, FF_SPEEDS, RING_MAX, VOLUME_MAX,
 };
 use slot_ui::{
@@ -375,6 +375,7 @@ pub struct App {
     snapshot: Option<Box<dyn Snapshot>>,
     core: Core,
     colour_pending: Option<bool>,
+    blending_pending: Option<Blending>,
     palette_live: bool,
     palette_pending: Option<GbPalette>,
     link_player: Option<u8>,
@@ -552,6 +553,7 @@ impl App {
             snapshot: None,
             core: Core::default(),
             colour_pending: None,
+            blending_pending: None,
             palette_live: false,
             palette_pending: None,
             link_player: None,
@@ -896,7 +898,12 @@ impl App {
             hidden.push(QuickRow::ExitGame);
         }
         if self.playing_platform() != Platform::Gba {
-            hidden.extend([QuickRow::GameL, QuickRow::GameR]);
+            hidden.extend([
+                QuickRow::GameL,
+                QuickRow::GameR,
+                QuickRow::GameAltL,
+                QuickRow::GameAltR,
+            ]);
         }
         if !self.left_stick {
             hidden.push(QuickRow::LeftStick);
@@ -932,6 +939,10 @@ impl App {
             QuickRow::Shader | QuickRow::ColourCorrection => {
                 self.quick_value(self.playing_row(row))
             }
+            QuickRow::Blending => Some(blending_value(self.blending_in_play())),
+            QuickRow::GbaBlending => Some(blending_value(self.state.blending_gba)),
+            QuickRow::GbBlending => Some(blending_value(self.state.blending_gb)),
+            QuickRow::GbcBlending => Some(blending_value(self.state.blending_gbc)),
             QuickRow::FastForward => QuickValue::speed(self.state.ff_speed),
             QuickRow::FastForwardSound => Some(QuickValue::flag(self.state.ff_sound)),
             QuickRow::GbaColourCorrection => {
@@ -1011,8 +1022,13 @@ impl App {
             | QuickRow::GameR
             | QuickRow::GameTurboA
             | QuickRow::GameTurboB
+            | QuickRow::GameAltA
+            | QuickRow::GameAltB
+            | QuickRow::GameAltL
+            | QuickRow::GameAltR
             | QuickRow::ScSave
             | QuickRow::ScLoad
+            | QuickRow::ScScreenshot
             | QuickRow::ScBrightUp
             | QuickRow::ScBrightDown
             | QuickRow::ScBlueDown
@@ -1999,6 +2015,25 @@ impl App {
         }
     }
 
+    pub fn blending_for(&self, platform: Platform) -> Blending {
+        match platform {
+            Platform::Gba => self.state.blending_gba,
+            Platform::Gb => self.state.blending_gb,
+            Platform::Gbc => self.state.blending_gbc,
+        }
+    }
+
+    pub fn blending(&self) -> Blending {
+        self.blending_for(self.playing_platform())
+    }
+
+    pub fn blending_in_play(&self) -> Blending {
+        match (self.core, self.blending()) {
+            (Core::Gpsp, Blending::Ghosting) => Blending::Mix,
+            (_, b) => b,
+        }
+    }
+
     pub fn light(&self) -> bool {
         self.state.appearance.light()
     }
@@ -2089,6 +2124,10 @@ impl App {
 
     pub fn take_colour_correction(&mut self) -> Option<bool> {
         self.colour_pending.take()
+    }
+
+    pub fn take_blending(&mut self) -> Option<Blending> {
+        self.blending_pending.take()
     }
 
     pub fn gb_palette(&self) -> Option<GbPalette> {
@@ -2291,6 +2330,7 @@ impl App {
                 Action::Polaroids => self.double_tap_states(),
                 Action::SaveState => self.save_state(),
                 Action::LoadState => self.load_newest(),
+                Action::Screenshot => self.save_screenshot(),
                 Action::RewindStart if !self.may_rewind() => self.refuse(),
                 Action::FfStart if !self.may_fast_forward() => self.refuse(),
                 _ => {}
@@ -2455,6 +2495,9 @@ impl App {
             | QuickRow::GbaColourCorrection
             | QuickRow::GbColourCorrection
             | QuickRow::GbcColourCorrection
+            | QuickRow::GbaBlending
+            | QuickRow::GbBlending
+            | QuickRow::GbcBlending
             | QuickRow::GbaShader
             | QuickRow::GbShader
             | QuickRow::GbcShader
@@ -2474,6 +2517,7 @@ impl App {
             | QuickRow::PlayGameplay
             | QuickRow::Shader
             | QuickRow::ColourCorrection
+            | QuickRow::Blending
             | QuickRow::Palette
             | QuickRow::GbBezel
             | QuickRow::GbcBezel
@@ -2495,8 +2539,13 @@ impl App {
             | QuickRow::GameR
             | QuickRow::GameTurboA
             | QuickRow::GameTurboB
+            | QuickRow::GameAltA
+            | QuickRow::GameAltB
+            | QuickRow::GameAltL
+            | QuickRow::GameAltR
             | QuickRow::ScSave
             | QuickRow::ScLoad
+            | QuickRow::ScScreenshot
             | QuickRow::ScBrightUp
             | QuickRow::ScBrightDown
             | QuickRow::ScBlueDown
@@ -2566,6 +2615,21 @@ impl App {
             self.persist();
             return;
         }
+        if row == QuickRow::Blending {
+            let choices: &[Blending] = match self.core {
+                Core::Gpsp => &Blending::GPSP,
+                Core::Mgba => &Blending::ALL,
+            };
+            let to = self.blending_in_play().step(choices, right);
+            match self.playing_platform() {
+                Platform::Gba => self.state.blending_gba = to,
+                Platform::Gb => self.state.blending_gb = to,
+                Platform::Gbc => self.state.blending_gbc = to,
+            }
+            self.blending_pending = Some(to);
+            self.persist();
+            return;
+        }
         let s = &mut self.state;
         match row {
             QuickRow::FastForward => {
@@ -2587,6 +2651,18 @@ impl App {
             QuickRow::GbcColourCorrection => {
                 s.colour_correction_gbc = !s.colour_correction_gbc;
                 self.colour_pending = Some(self.colour_correction());
+            }
+            QuickRow::GbaBlending => {
+                s.blending_gba = s.blending_gba.step(&Blending::ALL, right);
+                self.blending_pending = Some(self.blending());
+            }
+            QuickRow::GbBlending => {
+                s.blending_gb = s.blending_gb.step(&Blending::ALL, right);
+                self.blending_pending = Some(self.blending());
+            }
+            QuickRow::GbcBlending => {
+                s.blending_gbc = s.blending_gbc.step(&Blending::ALL, right);
+                self.blending_pending = Some(self.blending());
             }
             QuickRow::GbaShader => {
                 let to = s.shader_gba.step(&Shader::GBA, right);
@@ -2632,6 +2708,7 @@ impl App {
             | QuickRow::PlayGameplay
             | QuickRow::Shader
             | QuickRow::ColourCorrection
+            | QuickRow::Blending
             | QuickRow::Palette
             | QuickRow::ScreenGba
             | QuickRow::ScreenGbc
@@ -2658,8 +2735,13 @@ impl App {
             | QuickRow::GameR
             | QuickRow::GameTurboA
             | QuickRow::GameTurboB
+            | QuickRow::GameAltA
+            | QuickRow::GameAltB
+            | QuickRow::GameAltL
+            | QuickRow::GameAltR
             | QuickRow::ScSave
             | QuickRow::ScLoad
+            | QuickRow::ScScreenshot
             | QuickRow::ScBrightUp
             | QuickRow::ScBrightDown
             | QuickRow::ScBlueDown
@@ -2700,6 +2782,7 @@ impl App {
             Shader::Grid => Toast::ShaderGrid,
             Shader::Dot => Toast::ShaderDot,
             Shader::Simpletex => Toast::ShaderSimpletex,
+            Shader::Shimmerless => Toast::ShaderShimmerless,
         };
         self.persist();
         self.hud.toast(said, self.now());
@@ -4849,6 +4932,7 @@ impl App {
             return false;
         };
         let timeout = match self.state.lid_off_min {
+            Some(0) => return false,
             Some(min) => min as Millis * 60_000,
             None => power.timeout().as_millis() as Millis,
         };
@@ -5074,6 +5158,37 @@ impl App {
         self.pending = Some((PendingUndo::Save { stamp, evicted }, self.now()));
     }
 
+    fn save_screenshot(&mut self) {
+        let (Some(root), Some(snapshot), Some(cart)) = (&self.root, &self.snapshot, self.seated())
+        else {
+            return;
+        };
+        let Some(thumb) = snapshot.thumb().filter(|t| !t.is_empty()) else {
+            eprintln!("slot: screenshot: the core gave up no frame");
+            return self.refuse();
+        };
+        let png = crate::thumb::crop_picture(&thumb, self.platform.picture()).unwrap_or(thumb);
+        let dir = crate::root::screenshots_dir(root, self.platform);
+        let mut secs = self.wall_secs();
+        let path = loop {
+            let stamp = format_stamp(secs);
+            let candidate = dir.join(format!("{cart}-{stamp}.png"));
+            if !candidate.exists() {
+                break candidate;
+            }
+            secs += 1;
+        };
+        let written =
+            std::fs::create_dir_all(&dir).and_then(|()| slot_store::atomic_write(&path, &png));
+        if let Err(e) = &written {
+            eprintln!("slot: screenshot: {e}");
+        }
+        self.card_writes.wrote("screenshot", &written);
+        if written.is_ok() {
+            self.hud.toast(Toast::ScreenshotSaved, self.now());
+        }
+    }
+
     pub fn undo_available(&self, now: Millis) -> bool {
         self.pending
             .as_ref()
@@ -5237,6 +5352,15 @@ fn shader_value(shader: Shader) -> QuickValue {
         Shader::Grid => QuickValue::Grid,
         Shader::Dot => QuickValue::Dot,
         Shader::Simpletex => QuickValue::Simpletex,
+        Shader::Shimmerless => QuickValue::Shimmerless,
+    }
+}
+
+fn blending_value(blending: Blending) -> QuickValue {
+    match blending {
+        Blending::Off => QuickValue::Off,
+        Blending::Mix => QuickValue::Mix,
+        Blending::Ghosting => QuickValue::Ghosting,
     }
 }
 

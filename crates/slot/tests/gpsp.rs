@@ -52,6 +52,7 @@ fn gpsp_is_told_its_serial_mode_before_load() {
         "auto",
         false,
         false,
+        slot_store::Blending::Off,
         None,
     );
     assert_eq!(
@@ -78,6 +79,7 @@ fn gpsp_is_told_the_serial_mode_it_is_handed() {
             serial,
             false,
             false,
+            slot_store::Blending::Off,
             None,
         );
         assert_eq!(
@@ -104,6 +106,7 @@ fn gpsp_boots_through_the_bios_when_the_card_carries_one() {
         "auto",
         true,
         false,
+        slot_store::Blending::Off,
         None,
     );
     assert_eq!(
@@ -140,6 +143,7 @@ fn gpsp_is_left_on_its_own_boot_default_when_the_card_has_no_bios() {
         "auto",
         false,
         false,
+        slot_store::Blending::Off,
         None,
     );
     assert_eq!(
@@ -166,6 +170,7 @@ fn mgba_is_given_its_own_frameskip_and_none_of_gpsps() {
         "rfu",
         true,
         false,
+        slot_store::Blending::Off,
         None,
     );
     assert_eq!(
@@ -211,6 +216,7 @@ fn both_cores_are_told_about_colour_correction_in_their_own_words() {
                 "auto",
                 false,
                 colour,
+                slot_store::Blending::Off,
                 None,
             );
             assert_eq!(
@@ -249,6 +255,7 @@ fn gpsp_is_put_on_auto_frameskip() {
         "auto",
         false,
         false,
+        slot_store::Blending::Off,
         None,
     );
     assert_eq!(
@@ -663,6 +670,7 @@ fn open_core_reaches_a_gpsp_named_dylib_under_the_content_roots_system_directory
         Platform::Gba,
         "auto",
         false,
+        slot_store::Blending::Off,
         None,
         None,
     )
@@ -769,7 +777,16 @@ fn keeps_time_while_off(which: Core) {
     let _g = common::core_lock();
     let boot = |state: Option<&[u8]>| {
         let mut core = slot_retro::LibretroCore::open(&path).expect("open the core");
-        slot::core::apply_core_options(&mut core, which, Platform::Gba, "auto", false, false, None);
+        slot::core::apply_core_options(
+            &mut core,
+            which,
+            Platform::Gba,
+            "auto",
+            false,
+            false,
+            slot_store::Blending::Off,
+            None,
+        );
         core.load(&rom).expect("load the probe");
         if let Some(s) = state {
             core.unserialize(s).expect("resume");

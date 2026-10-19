@@ -134,6 +134,16 @@ fn palette_steps_the_palette_and_asks_the_core() {
 }
 
 #[test]
+fn blending_steps_the_running_platform_and_asks_the_core() {
+    let (_d, mut a) = playing();
+    assert_eq!(a.blending(), slot_store::Blending::Off);
+    go_to(&mut a, QuickRow::Blending);
+    press(&mut a, Btn::Right);
+    assert_eq!(a.blending(), slot_store::Blending::Mix);
+    assert_eq!(a.take_blending(), Some(slot_store::Blending::Mix));
+}
+
+#[test]
 fn states_with_nothing_saved_is_refused_and_the_menu_stays() {
     let (_d, mut a) = playing();
     go_to(&mut a, QuickRow::States);

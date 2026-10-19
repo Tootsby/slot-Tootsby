@@ -21,7 +21,7 @@ now() {
 minutes() {
 	m="$(sed -n 's/^lid_off_min=//p' "$SLOT_STATE" 2>/dev/null | tail -1)"
 	case "$m" in
-	1 | 3 | 5 | 10 | 15 | 30) echo "$m" ;;
+	0 | 1 | 3 | 5 | 10 | 15 | 30) echo "$m" ;;
 	*) echo 3 ;;
 	esac
 }
@@ -38,13 +38,18 @@ check() {
 		rm -f "$CLOSED"
 		return 1
 	fi
+	min="$(minutes)"
+	if [ "$min" -eq 0 ]; then
+		rm -f "$CLOSED"
+		return 1
+	fi
 	t="$(now)"
 	if [ ! -s "$CLOSED" ]; then
 		echo "$t" > "$CLOSED"
 		return 1
 	fi
 	shut=$((t - $(cat "$CLOSED")))
-	[ "$shut" -ge $(($(minutes) * 60 + GRACE)) ] || return 1
+	[ "$shut" -ge $((min * 60 + GRACE)) ] || return 1
 	rm -f "$CLOSED"
 	power_off "$shut"
 }

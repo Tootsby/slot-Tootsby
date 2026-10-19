@@ -381,6 +381,7 @@ fn screen_opens_a_page_of_its_own_and_b_comes_back_to_it() {
     assert_eq!(a.quick_menu(), Some(QuickRow::GbShader));
     for want in [
         QuickRow::GbColourCorrection,
+        QuickRow::GbBlending,
         QuickRow::GbPalettes,
         QuickRow::GbBezel,
         QuickRow::GbShader,
@@ -411,7 +412,9 @@ fn each_platform_keeps_its_own_shader_wraps_and_starts_on_grid_and_simpletex() {
     );
     for (btn, want, shown) in [
         (Btn::Right, Shader::Dot, QuickValue::Dot),
+        (Btn::Right, Shader::Shimmerless, QuickValue::Shimmerless),
         (Btn::Right, Shader::Off, QuickValue::Off),
+        (Btn::Left, Shader::Shimmerless, QuickValue::Shimmerless),
         (Btn::Left, Shader::Dot, QuickValue::Dot),
         (Btn::Left, Shader::Grid, QuickValue::Grid),
         (Btn::Left, Shader::Lcd3x, QuickValue::Lcd3x),
@@ -445,7 +448,7 @@ fn each_platform_keeps_its_own_shader_wraps_and_starts_on_grid_and_simpletex() {
     let s = read_slot_state(d.path());
     assert_eq!(
         (s.shader_gba, s.shader_gb, s.shader_gbc),
-        (Shader::Off, Shader::Grid, Shader::Off)
+        (Shader::Off, Shader::Grid, Shader::Shimmerless)
     );
 }
 
@@ -1253,7 +1256,7 @@ fn lid_power_off_steps_through_its_minutes_wraps_and_saves() {
     });
     open_at(&mut a, QuickRow::LidOff);
     assert_eq!(a.lid_off_min(), 3);
-    for want in [5, 10, 15, 30, 1, 3] {
+    for want in [5, 10, 15, 30, 0, 1, 3] {
         press(&mut a, Btn::Right);
         assert_eq!(a.lid_off_min(), want);
         assert_eq!(read_slot_state(d.path()).lid_off_min, Some(want));
