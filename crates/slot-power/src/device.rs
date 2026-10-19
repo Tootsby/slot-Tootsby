@@ -290,10 +290,14 @@ extern "C" {
     fn fcntl(fd: c_int, cmd: c_int, ...) -> c_int;
 }
 
+#[cfg(unix)]
 const F_GETFD: c_int = 1;
+#[cfg(unix)]
 const F_SETFD: c_int = 2;
+#[cfg(unix)]
 const FD_CLOEXEC: c_int = 1;
 
+#[cfg(unix)]
 fn close_on_exec() {
     let Ok(fds) = fs::read_dir("/proc/self/fd") else {
         return;
@@ -311,6 +315,9 @@ fn close_on_exec() {
         }
     }
 }
+
+#[cfg(not(unix))]
+fn close_on_exec() {}
 
 fn upload(node: &fs::File, id: i16) -> Option<i16> {
     #[cfg(not(unix))]
@@ -547,6 +554,8 @@ impl Platform for DevicePlatform {
         match (mount, stage_repair(&self.root, Path::new(REPAIR_STAGE))) {
             (Some(m), Ok(script)) => {
                 close_on_exec();
+                #[cfg(not(unix))]
+                let _ = (&m, &script);
                 #[cfg(unix)]
                 {
                     use std::os::unix::process::CommandExt;
