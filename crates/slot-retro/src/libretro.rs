@@ -390,7 +390,8 @@ pub struct LibretroCore {
     rom_path: Option<CString>,
     av: AvInfo,
     loaded: bool,
-    state_size: Option<usize>,
+    /// The state size the core gave, and the save chip size it gave it at.
+    state_size: Option<(usize, usize)>,
     _lib: Library,
 }
 
@@ -625,11 +626,20 @@ impl RetroCore for LibretroCore {
     }
 
     fn serialize(&mut self) -> Result<Vec<u8>, CoreError> {
-        if let Some(buf) = self.state_size.and_then(|size| self.serialize_at(size)) {
+        // A state carries the save chip, and mGBA only settles on a chip once the game touches
+        // it, a few frames in: a size asked before then is the undetected chip's, too big for
+        // the rest of the game. So ask again when the chip changes. A state that grew without
+        // the chip changing is refused at the old size and asked for again below.
+        let chip = unsafe { (self.api.get_memory_size)(MEMORY_SAVE_RAM) };
+        if let Some(buf) = self
+            .state_size
+            .filter(|&(_, at)| at == chip)
+            .and_then(|(size, _)| self.serialize_at(size))
+        {
             return Ok(buf);
         }
         let size = unsafe { (self.api.serialize_size)() };
-        self.state_size = (size > 0).then_some(size);
+        self.state_size = (size > 0).then_some((size, chip));
         if size == 0 {
             return Err(CoreError::State("core reports no state".into()));
         }
