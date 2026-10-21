@@ -178,6 +178,7 @@ tasks:
     deps: [core]
     env:
       SLOT_ROOT: '{{.SLOT_ROOT | default "./sdcard"}}'
+      SLOT_SILENT: '0'
     cmds:
       - cargo run --release -p slot
 
@@ -186,6 +187,7 @@ tasks:
     deps: [core]
     env:
       SLOT_ROOT: '{{.SLOT_ROOT | default "./sdcard"}}'
+      SLOT_SILENT: '0'
       SLOT_BARE: '1'
     cmds:
       - cargo run --release -p slot
@@ -195,6 +197,7 @@ tasks:
     deps: [core]
     env:
       SLOT_ROOT: '{{.SLOT_ROOT | default "./sdcard"}}'
+      SLOT_SILENT: '0'
       SLOT_WINDOW: '1280x960'
     cmds:
       - cargo run --release -p slot
@@ -204,6 +207,7 @@ tasks:
     deps: [core]
     env:
       SLOT_ROOT: '{{.SLOT_ROOT | default "./sdcard"}}'
+      SLOT_SILENT: '0'
     cmds:
       - cargo run -p slot
 
@@ -348,6 +352,7 @@ tasks:
           CMD: ./target-device/device/slot --init-root {{.OUT}}
       - cp target-device/device/slot {{.OUT}}/System/slot
       - cp -R card/System/* {{.OUT}}/System/
+      - for d in Bezels Labels Wallpapers; do cp card/$d/README.txt {{.OUT}}/$d/; done
       - file vendor/mgba_libretro.so | grep -q aarch64
       - file vendor/gpsp_libretro.so | grep -q aarch64
       - cp vendor/mgba_libretro.so {{.OUT}}/System/

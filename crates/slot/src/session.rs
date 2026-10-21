@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use slot_input::{Action, Btn, Chord, Gestures, Millis, Mod, RawEvent};
+use slot_input::{Action, Btn, Chord, Contexts, Entry, Gestures, Millis, Mod, RawEvent};
 use slot_retro::Rumble;
-use slot_store::{Platform, ShortcutKeys};
+use slot_store::Platform;
 use slot_ui::FfState;
 
 pub const RUMBLE_MIN_MS: Millis = 100;
@@ -15,7 +15,7 @@ use crate::audio::{opened_sink, AudioSink, Ring, Sfx};
 use crate::core::{open_core, Opened};
 use crate::emu::{CoreState, EmuHandle, Speed};
 use crate::frames::FrameRef;
-use crate::input::{shortcut_table, Pad};
+use crate::input::Pad;
 use crate::persist;
 use crate::prefetch::Prefetch;
 
@@ -26,9 +26,10 @@ pub struct Session {
     opening: Option<Opening>,
     sink: Box<dyn AudioSink>,
     gestures: Gestures,
-    table_for: Option<(ShortcutKeys, bool)>,
+    entries: Vec<Entry>,
     captured: Vec<Btn>,
     pad: Pad,
+    sent: u16,
     rewinding: bool,
     fast: bool,
     motor: u16,
@@ -51,9 +52,10 @@ impl Session {
             opening: None,
             sink,
             gestures: Gestures::new(),
-            table_for: None,
+            entries: Vec::new(),
             captured: Vec::new(),
             pad: Pad::default(),
+            sent: 0,
             rewinding: false,
             fast: false,
             motor: 0,
@@ -171,20 +173,25 @@ impl Session {
     pub fn feed(&mut self, events: impl IntoIterator<Item = RawEvent>, now: Millis) {
         let mut actions = Vec::new();
         let latched = self.gestures.ff_latched();
-        self.gestures.set_playing(self.playing());
-        let shortcuts = self.app.shortcuts();
-        let repair = self.app.repair_offered();
-        if self.table_for != Some((shortcuts, repair)) {
-            let mut table = shortcut_table(&shortcuts);
-            if repair {
-                let chord = Chord {
-                    modifier: Some(Mod::Select),
-                    button: Btn::Start,
-                };
-                table.insert(0, (chord, Action::RepairCard));
-            }
-            self.gestures.set_shortcuts(table);
-            self.table_for = Some((shortcuts, repair));
+        self.gestures.set_context(self.app.input_context());
+        let mut entries = self.app.binding_table().entries();
+        if self.app.repair_offered() {
+            let chord = Chord {
+                modifier: Some(Mod::Select),
+                button: Btn::Start,
+            };
+            entries.insert(
+                0,
+                Entry {
+                    chord,
+                    action: Action::RepairCard,
+                    contexts: Contexts::ALL,
+                },
+            );
+        }
+        if self.entries != entries {
+            self.gestures.set_entries(entries.clone());
+            self.entries = entries;
         }
         for ev in events {
             if self.app.capturing() {
@@ -192,12 +199,14 @@ impl Session {
                     RawEvent::Down(b) => self.captured.push(b),
                     RawEvent::Up(b) => self.captured.retain(|x| *x != b),
                 }
+                self.gestures.observe(ev);
                 self.app.capture_input(ev);
                 continue;
             }
             if let RawEvent::Up(b) = ev {
                 if let Some(at) = self.captured.iter().position(|x| *x == b) {
                     self.captured.remove(at);
+                    self.gestures.observe(ev);
                     continue;
                 }
             }
@@ -218,7 +227,12 @@ impl Session {
             self.pad.apply(Action::GbaUp(btn));
         }
         if let Some(emu) = &self.emu {
-            emu.set_input(self.pad.mask(&self.app.controls()));
+            let mask = self.pad.mask(&self.app.controls());
+            if trace() && mask.0 != self.sent {
+                eprintln!("slot: pad {:#06x}", mask.0);
+            }
+            self.sent = mask.0;
+            emu.set_input(mask);
         }
     }
 
@@ -281,7 +295,7 @@ impl Session {
             }
         }
         let mut recoloured = false;
-        if let Some(p) = self.app.take_gb_palette() {
+        if let Some(p) = self.app.take_gb_colors() {
             if let Some(emu) = &self.emu {
                 emu.set_option("mgba_gb_colors", p.core_name());
                 recoloured = true;
@@ -301,7 +315,6 @@ impl Session {
             let (key, value) = crate::core::blend_option(self.app.core(), blending);
             if let Some(emu) = &self.emu {
                 emu.set_option(key, value);
-                recoloured = true;
             }
         }
         if recoloured && self.held() && !self.app.link_active() {
@@ -486,10 +499,8 @@ impl Session {
         match self.emu.as_ref().map(EmuHandle::state) {
             Some(CoreState::Loading) => {}
             Some(CoreState::Ready) => {
-                if let (true, Some(p), Some(emu)) =
-                    (self.app.palette_live(), self.app.gb_palette(), &self.emu)
-                {
-                    emu.set_option("mgba_gb_colors", p.core_name());
+                if let (true, Some(emu)) = (self.app.palette_live(), &self.emu) {
+                    emu.set_option("mgba_gb_colors", self.app.gb_colors().core_name());
                 }
                 self.app.on_core_ready()
             }
@@ -520,15 +531,16 @@ impl Session {
         let stem = stem.to_owned();
         let clean = self.app.starting_clean();
         let player = self.app.link_player();
-        let chosen = self.app.gb_palette();
+        let chosen = self.app.gb_colors();
         let colour = self.app.colour_correction_for(platform);
         let blending = self.app.blending_for(platform);
         let join = std::thread::Builder::new()
             .name("slot-open".into())
             .spawn(move || {
-                let resume = (!clean)
-                    .then(|| persist::read_resume(&root, platform, core, &stem))
-                    .flatten();
+                let resume = match clean {
+                    true => Ok(None),
+                    false => persist::read_resume(&root, platform, core, &stem),
+                };
                 launch("resume state read");
                 let palette = crate::core::palette_for(chosen, platform, &rom, player);
                 let opened = open_core(
@@ -566,11 +578,26 @@ impl Session {
         self.app.set_palette_live(loaded.palette_live);
         self.app.set_named_core(loaded.opened.named);
         let ring = self.sink.ring();
-        let (core, rom, sav, resume) = (loaded.opened.core, loaded.rom, loaded.sav, loaded.resume);
+        let sav = self.app.card_read("save", loaded.sav);
+        let resume = self.app.card_read("resume", loaded.resume);
+        let (sav_unread, resume_unread) = (sav.is_none(), resume.is_none());
+        let (core, rom, sav, resume) = (
+            loaded.opened.core,
+            loaded.rom,
+            sav.flatten(),
+            resume.flatten(),
+        );
         let emu = match loaded.player.filter(|_| loaded.platform == Platform::Gba) {
             Some(p) => EmuHandle::spawn_linked(core, rom, ring, sav, resume, p),
             None => EmuHandle::spawn(core, rom, ring, sav, resume),
         };
+        if sav_unread {
+            emu.refuse_save_ram();
+        }
+        if resume_unread {
+            emu.refuse_resume();
+        }
+        self.app.set_resume_unread(resume_unread);
         emu.set_volume(self.app.output_volume());
         emu.set_driven(self.driven);
         self.app.set_snapshot(Box::new(emu.snapshot()));
@@ -617,8 +644,8 @@ struct Loaded {
     platform: Platform,
     player: Option<u8>,
     palette_live: bool,
-    sav: Option<Vec<u8>>,
-    resume: Option<Vec<u8>>,
+    sav: std::io::Result<Option<Vec<u8>>>,
+    resume: std::io::Result<Option<Vec<u8>>>,
 }
 
 struct Opening {

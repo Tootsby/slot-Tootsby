@@ -139,6 +139,14 @@ impl EmuHandle {
         Self::spawn_as(core, rom, ring, sav, resume, Some(player))
     }
 
+    pub fn refuse_save_ram(&self) {
+        self.shared.sav_refused.store(true, Ordering::Release);
+    }
+
+    pub fn refuse_resume(&self) {
+        self.shared.resume_refused.store(true, Ordering::Release);
+    }
+
     fn spawn_as(
         core: Box<dyn RetroCore>,
         rom: PathBuf,
@@ -586,6 +594,8 @@ impl Worker {
                                         "slot: cable: restored {} bytes, running the host's game",
                                         state.len()
                                     );
+                                        self.shared.sav_refused.store(true, Ordering::Release);
+                                        self.shared.resume_refused.store(true, Ordering::Release);
                                         c.prime();
                                         t.send(NETPACKET_RELIABLE, &cable::ready_packet());
                                     }
@@ -884,9 +894,8 @@ impl Worker {
             }
             Cmd::Refresh => match core.serialize() {
                 Ok(state) => {
-                    core.set_frame_skip(true);
-                    core.run_frame(ButtonMask(0));
                     core.set_frame_skip(false);
+                    core.run_frame(ButtonMask(0));
                     core.run_frame(ButtonMask(0));
                     self.publish(core.video_xrgb8888());
                     let _ = core.take_audio();

@@ -9,4 +9,69 @@
 A bespoke, Game Boy-centric frontend for the Anbernic RG SP.
 This is purely a private fork for playing around with potential modifications of this project.
 
-The official project and links can be found at [slot-cfw.fyi](https://slot-cfw.fyi).
+Has support for GBA, GBC, and GB titles only.
+
+> [!IMPORTANT]
+> ROMs must be unzipped. slot does not read `.zip` or `.7z` files.
+
+A full user guide can be found at [slot-cfw.fyi](https://slot-cfw.fyi).
+
+Release notes can be found in the [changelog](CHANGELOG.md).
+
+---
+
+# What does it look like?
+
+<p align="center">
+<img src=".github/resources/screenshots/carousel.gif" width="48%" alt="Scrolling the cart carousel across the Game Boy Advance, Game Boy and Game Boy Color shelves">
+<img src=".github/resources/screenshots/core-picker.gif" width="48%" alt="Flipping a cart to its circuit board to choose mGBA or gpSP">
+</p>
+
+<p align="center">
+<img src=".github/resources/screenshots/link.gif" width="96.5%" alt="Two SPs racing in Mario Kart over the emulated link">
+</p>
+
+---
+
+# Supported Devices
+
+| Device             | Supported                                    | Since Version |
+|--------------------|----------------------------------------------|---------------|
+| Anbernic RG SP     | Yes                                          | Always        |
+| Anbernic RG34XX    | Yes                                          | 1.4.0         |
+| Anbernic RG34XXSP  | Yes (Needs Left Stick as D-Pad Verification) | 1.4.0         |
+| Anbernic RG35XXSP  | Yes                                          | 1.5.0         |
+| Anbernic 35XX Plus | Yes                                          | 1.5.0         |
+| Anbernic RG28XX    | Yes                                          | 1.6.0         |
+| Anbernic RG35XX-H  | Yes                                          | 1.7.0         |
+
+If you have one of the untested devices, or have tried slot on a device not listed,
+please [open an issue on GitHub](https://github.com/BrandonKowalski/slot/issues) and let me know how it went.
+
+---
+
+# AI Disclosure
+
+The Rust frontend, and the SVGs on [slot-cfw.fyi](https://slot-cfw.fyi), were put together by Claude.
+I reviewed everything that was produced. All documentation is 100% free-range, meatbag prose.
+
+My goal with this project was to recreate the feeling of playing my GBA SP in the back seat as a kid,
+but with a few modern creature comforts.
+
+Nothing about this project is exciting or groundbreaking from a technological perspective, and as a
+result, I delegated the glue code. mGBA and gpSP have been around forever and are the true stars of
+this show. The incredible skeuomorphic art is the work of [Markus](https://github.com/MarkusMaribu), an
+artist who saw the bare-bones version and offered to dress it up.
+
+I understand if my use of AI is a dealbreaker for you. Just know it's the least interesting part of
+what's here.
+
+Figured I should share the end result of all the wasted water. ✌🏻
+
+---
+
+# Spread Joy!
+
+I've spent a lot of time building slot.
+
+If you enjoy using it and feel inclined to pay it forward, go do something nice for someone! ❤️
