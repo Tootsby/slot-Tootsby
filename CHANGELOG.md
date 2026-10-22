@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.8.0-tootsby.2](https://github.com/Tootsby/slot/releases/tag/v1.8.0-tootsby.2) — RG SP Custom Fork
+## [1.8.0-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.0-tootsby.2) — RG SP Custom Fork
 
 ### Display, Latency & Calibration (RG SP)
 - **120 Hz Display Scanout & Native Frame Pacing**: Drives the Anbernic RG SP panel at `120 Hz` during gameplay and paces the emulation loop at native GBA/GB refresh (`59.7275 Hz`, `16,742,706 ns` per frame) instead of `60.0 Hz`, halving display scanout latency (`4.2 ms` avg vs `8.3 ms`) and eliminating periodic audio/video frame judder. Automatically switches back to `60 Hz` on the cartridge shelf to save power. (Adapted from `@pvaibhav`)
@@ -15,7 +15,7 @@
 ### Visuals & Bundled Wallpapers
 - **6 Custom Skeuomorphic Wallpapers (`720×480`)**: Bundled in `Wallpapers/`, including 3 minimalist clean surfaces (`Dark Walnut.png`, `Charcoal Ebony.png`, `Matte Slate.png`) and 3 warm wood shelves with organized retro desktop clutter (`Tinkerer Workbench.png`, `Collector Desk.png`, `Late Night Study.png`).
 
-## [1.8.0-tootsby.1](https://github.com/Tootsby/slot/releases/tag/v1.8.0-tootsby.1) — RG SP Custom Fork
+## [1.8.0-tootsby.1](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.0-tootsby.1) — RG SP Custom Fork
 
 - **Synced with Upstream v1.8.0**: Includes remappable controls, 48 kHz filtered audio resampling, SD card repair, and unified carousel footer.
 - **Late-Night Screen Controls**: Lowered the hardware minimum brightness floor back to `1/255` and added a toggleable **Extra Dim** software filter under **Settings → Screen → General** and the in-game **Screen** menu.
