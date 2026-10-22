@@ -1994,6 +1994,9 @@ impl App {
 
     pub fn set_power(&mut self, mut power: Power) {
         power.set_backlight(self.state.brightness);
+        if self.state.high_refresh {
+            power.set_high_refresh(true);
+        }
         self.headphones = power.headphones();
         self.hud.set_headphones(self.headphones);
         let secs = power.now();
@@ -4751,9 +4754,17 @@ impl App {
             Some(cart) => Phase::Playing { cart },
             None => Phase::Shelf,
         };
+        let high_refresh = self.state.high_refresh;
         if let Some(power) = &mut self.power {
             power.on_open();
+            if high_refresh {
+                power.set_high_refresh(true);
+            }
         }
+    }
+
+    pub fn standing_by(&self) -> bool {
+        matches!(self.phase, Phase::Doze { .. }) && !self.shutting_down()
     }
 
     pub fn on_doze_timeout(&mut self) {

@@ -119,7 +119,7 @@ fn a_slot_state_missing_a_key_reads_as_default_not_half_populated() {
 fn an_out_of_range_level_reads_as_default() {
     let d = tmp_root();
     for body in [
-        "cart=\nbrightness=10\nblue_light=1\nvolume=50\n",
+        "cart=\nbrightness=16\nblue_light=1\nvolume=50\n",
         "cart=\nbrightness=3\nblue_light=10\nvolume=50\n",
         "cart=\nbrightness=3\nblue_light=1\nvolume=101\n",
     ] {
@@ -249,6 +249,7 @@ fn a_card_from_before_the_settings_keeps_all_its_values() {
             show_recents: false,
             show_titles: false,
             left_stick_dpad: true,
+            high_refresh: true,
             lid_off_min: None,
             bezel_gba: BezelPick::Ags102,
             bezel_gb: BezelPick::Ags102,

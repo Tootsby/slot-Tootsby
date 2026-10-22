@@ -38,11 +38,11 @@ fn nothing_shows_until_something_is_adjusted() {
 }
 
 #[test]
-fn volume_reads_against_100_not_the_nine_step_scale() {
-    let full = fill(HudKind::Brightness, 9);
+fn volume_reads_against_100_not_the_fifteen_step_scale() {
+    let full = fill(HudKind::Brightness, 15);
     assert!(
-        fill(HudKind::Volume, 9) < full * 0.2,
-        "volume 9 filled the bar, so it is being read against the brightness scale"
+        fill(HudKind::Volume, 15) < full * 0.25,
+        "volume 15 filled the bar, so it is being read against the brightness scale"
     );
     assert_eq!(fill(HudKind::Volume, 100), full);
 }

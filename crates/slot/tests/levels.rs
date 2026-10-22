@@ -14,7 +14,7 @@ fn levels_clamp_and_persist() {
         a.apply(Action::BrightnessUp);
     }
     a.flush_state();
-    assert_eq!(read_slot_state(d.path()).brightness, 9);
+    assert_eq!(read_slot_state(d.path()).brightness, 15);
     for _ in 0..20 {
         a.apply(Action::BrightnessDown);
     }

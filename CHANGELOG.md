@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.8.0-tootsby.2](https://github.com/Tootsby/slot/releases/tag/v1.8.0-tootsby.2) — RG SP Custom Fork
+
+### Display, Latency & Calibration (RG SP)
+- **120 Hz Display Scanout & Native Frame Pacing**: Drives the Anbernic RG SP panel at `120 Hz` during gameplay and paces the emulation loop at native GBA/GB refresh (`59.7275 Hz`, `16,742,706 ns` per frame) instead of `60.0 Hz`, halving display scanout latency (`4.2 ms` avg vs `8.3 ms`) and eliminating periodic audio/video frame judder. Automatically switches back to `60 Hz` on the cartridge shelf to save power. (Adapted from `@pvaibhav`)
+- **RG SP Hardware Display Calibration LUT**: Applies a 33×33×33 3D color calibration cube (`rgsp.cube` / `rg34xxsp.cube`) folded into the `RGB565 -> XRGB8888` framebuffer present table at startup with zero per-frame CPU overhead. (Adapted from `@pvaibhav`)
+- **Granular 15-Step Brightness Control (`1/255` Floor)**: Expanded brightness control from 10 to **15 steps** along a perceptual power curve (`1.9`) starting at hardware minimum `1/255` (`[1, 3, 7, 15, 25, 37, 52, 69, 89, 111, 135, 162, 191, 222, 255]`).
+
+### Battery Life & Performance
+- **Software Standby (`10 FPS` Idle Throttling)**: Automatically drops the shelf/menu frame rate to `10 FPS` (`100 ms` frame budget) after 30 seconds of inactivity when not playing a game, restoring full `60 FPS` on the first button press. (Adapted from `@suprsomething`)
+- **System-Level Power Savings**: Switches the H700 CPU scaling governor from `performance` to `schedutil`, powers off unused USB host controllers (`ohci1-3`, `ehci1-3`), and unloads the `8821cs` Wi-Fi kernel module 20 seconds after boot when no Link session is active—automatically reloading `8821cs` via `modprobe` when starting a Link session. (Adapted from `@pvaibhav` & `@suprsomething`)
+- **Emulation Loop Micro-Optimizations**: Reuses the audio sample `Vec<i16>` buffer across frames (`recycle_audio`) and widens `RGB565` pixels 2-at-a-time in 32-bit registers before shader passes. (Adapted from `@pvaibhav`)
+
+### Visuals & Bundled Wallpapers
+- **6 Custom Skeuomorphic Wallpapers (`720×480`)**: Bundled in `Wallpapers/`, including 3 minimalist clean surfaces (`Dark Walnut.png`, `Charcoal Ebony.png`, `Matte Slate.png`) and 3 warm wood shelves with organized retro desktop clutter (`Tinkerer Workbench.png`, `Collector Desk.png`, `Late Night Study.png`).
+
+## [1.8.0-tootsby.1](https://github.com/Tootsby/slot/releases/tag/v1.8.0-tootsby.1) — RG SP Custom Fork
+
+- **Synced with Upstream v1.8.0**: Includes remappable controls, 48 kHz filtered audio resampling, SD card repair, and unified carousel footer.
+- **Late-Night Screen Controls**: Lowered the hardware minimum brightness floor back to `1/255` and added a toggleable **Extra Dim** software filter under **Settings → Screen → General** and the in-game **Screen** menu.
+- **Sharp-Shimmerless Shader**: Added built-in `Sharp-Shimmerless` scaling shader under **Screen → GBA / GB / GBC → Shader**.
+- **Interframe Blending**: Toggleable per-platform frame blending (**Settings → Gameplay → Interframe Blending**) for 30 Hz flicker-heavy games, with a fix for the paused in-game menu backdrop.
+- **Controls & System Additions**: Added **Alternate A/B** and **Alternate L/R** button mappings, in-game screenshots via `SELECT + X`, and a **Lid Power Off → Off** option.
+
 ## [1.8.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.8.0)
 
 - Controls are remappable. Split between three categories: In-Game buttons, Shortcuts, Shelf keys. All three are global. (#23, #92)

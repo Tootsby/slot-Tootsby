@@ -1003,8 +1003,6 @@ fn a_state_asked_for_in_the_last_present_is_still_answered() {
     );
 }
 
-const PANEL: Duration = Duration::from_micros(16_760);
-
 #[test]
 fn a_driven_worker_runs_one_frame_per_tick() {
     let emu = spawn();
@@ -1013,11 +1011,11 @@ fn a_driven_worker_runs_one_frame_per_tick() {
         wait_for(|| emu.locked()),
         "the worker never locked to the display"
     );
-    emu.tick(PANEL);
+    emu.tick();
     emu.wait_frame(Duration::from_millis(100));
     let before = emu.published_count();
     for _ in 0..20 {
-        emu.tick(PANEL);
+        emu.tick();
         assert!(
             emu.wait_frame(Duration::from_millis(100)),
             "a tick's frame never arrived"
@@ -1037,7 +1035,7 @@ fn a_locked_worker_answers_a_state_request_without_waiting_for_the_tick() {
     );
     let snapshot = emu.snapshot();
     for _ in 0..10 {
-        emu.tick(PANEL);
+        emu.tick();
         assert!(emu.wait_frame(Duration::from_millis(100)));
         std::thread::sleep(Duration::from_millis(2));
         let before = emu.published_count();
@@ -1093,7 +1091,7 @@ fn waiting_on_an_unlocked_worker_does_not_block() {
     emu.set_driven(true);
     emu.set_speed(Speed::Paused);
     assert!(wait_for(|| !emu.locked()), "a paused worker stayed locked");
-    emu.tick(PANEL);
+    emu.tick();
     let began = Instant::now();
     assert!(!emu.wait_frame(Duration::from_millis(100)));
     assert!(

@@ -241,6 +241,12 @@ fn the_values_read_as_the_menu_prints_them() {
             "7",
             "8",
             "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
         ]
     );
     assert_eq!(QuickValue::flag(true), QuickValue::On);

@@ -34,7 +34,29 @@ fi
 
 echo "|/bin/sh $SYS/coresave.sh %p %s %e %t" > /proc/sys/kernel/core_pattern 2>/dev/null
 
+for governor in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+	[ -w "$governor" ] || continue
+	printf '%s\n' schedutil > "$governor" 2>/dev/null || log "could not set schedutil for $governor"
+done
+
+for usb in \
+	/sys/devices/platform/soc/5200000.ohci1-controller/ohci_enable \
+	/sys/devices/platform/soc/5310000.ohci2-controller/ohci_enable \
+	/sys/devices/platform/soc/5311000.ohci3-controller/ohci_enable \
+	/sys/devices/platform/soc/5200000.ehci1-controller/ehci_enable \
+	/sys/devices/platform/soc/5310000.ehci2-controller/ehci_enable \
+	/sys/devices/platform/soc/5311000.ehci3-controller/ehci_enable; do
+	[ -w "$usb" ] && printf '0\n' > "$usb" 2>/dev/null
+done
+
 [ -f "$RUN/slotlink.session" ] && sh "$SYS/slotlink.sh" link down > /dev/null 2>&1
+
+if [ -d /sys/devices/platform/soc ]; then
+	(
+		sleep 20
+		[ -f "$RUN/slotlink.session" ] || rmmod 8821cs 2>/dev/null || true
+	) > /dev/null 2>&1 &
+fi
 
 [ -f "$LOGS/slot.log" ] && mv -f "$LOGS/slot.log" "$LOGS/slot.log.1"
 log "exec $SYS/slot"

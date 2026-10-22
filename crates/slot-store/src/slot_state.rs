@@ -4,7 +4,7 @@ use crate::atomic::atomic_write;
 use crate::gb_palette::{GbColors, GbPalette};
 use crate::platform::Platform;
 
-pub const BRIGHTNESS_MAX: u8 = 9;
+pub const BRIGHTNESS_MAX: u8 = 15;
 pub const BLUE_LIGHT_MAX: u8 = 9;
 pub const VOLUME_MAX: u8 = 100;
 
@@ -220,6 +220,7 @@ pub struct SlotState {
     pub eject_save: bool,
     pub turbo: bool,
     pub rewind: bool,
+    pub high_refresh: bool,
     pub gb_palettes: bool,
     pub gb_palette: GbPalette,
     pub appearance: Appearance,
@@ -414,6 +415,7 @@ impl Default for SlotState {
             eject_save: true,
             turbo: true,
             rewind: true,
+            high_refresh: true,
             gb_palettes: false,
             gb_palette: GbPalette::DEFAULT,
             appearance: Appearance::Dark,
@@ -513,6 +515,7 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         s.colour_correction_gbc as u8
     ));
     text.push_str(&format!("extra_dim={}\n", s.extra_dim as u8));
+    text.push_str(&format!("high_refresh={}\n", s.high_refresh as u8));
     text.push_str(&format!("blending_gba={}\n", s.blending_gba.name()));
     text.push_str(&format!("blending_gb={}\n", s.blending_gb.name()));
     text.push_str(&format!("blending_gbc={}\n", s.blending_gbc.name()));
@@ -569,6 +572,7 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut eject_save = None;
     let mut turbo = None;
     let mut rewind = None;
+    let mut high_refresh = None;
     let mut gb_palettes = None;
     let mut gb_palette = None;
     let mut appearance = None;
@@ -613,6 +617,7 @@ fn parse(text: &str) -> Option<SlotState> {
             "eject_save" => eject_save = flag(value),
             "turbo" => turbo = flag(value),
             "rewind" => rewind = flag(value),
+            "high_refresh" => high_refresh = flag(value),
             "gb_palettes" => gb_palettes = flag(value),
             "gb_palette" => gb_palette = GbPalette::parse(value),
             "appearance" => appearance = Appearance::parse(value),
@@ -668,6 +673,7 @@ fn parse(text: &str) -> Option<SlotState> {
         eject_save: eject_save.unwrap_or(fallback.eject_save),
         turbo: turbo.unwrap_or(fallback.turbo),
         rewind: rewind.unwrap_or(fallback.rewind),
+        high_refresh: high_refresh.unwrap_or(fallback.high_refresh),
         gb_palettes: gb_palettes.unwrap_or(fallback.gb_palettes),
         gb_palette: gb_palette.unwrap_or(fallback.gb_palette),
         appearance: appearance.unwrap_or(fallback.appearance),

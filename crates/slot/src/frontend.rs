@@ -27,6 +27,7 @@ use crate::label_cache::{self, Rebuild};
 use crate::link_art_builder::LinkArtBuilder;
 use crate::link_screen::{LinkSprites, Sprite};
 use crate::link_start::{LinkFail, LinkStep};
+use crate::pacing::FrameClock;
 use crate::session::Session;
 
 const DOZE_TIMEOUT: Duration = Duration::from_secs(180);
@@ -622,8 +623,16 @@ impl Frontend {
         self.session.set_driven(true);
     }
 
-    pub fn step_emulator(&self, present: Duration, timeout: Duration) -> bool {
-        self.session.step_emulator(present, timeout)
+    pub fn frame_clock(&self) -> FrameClock {
+        self.session.frame_clock()
+    }
+
+    pub fn step_emulator(&self, timeout: Duration) -> bool {
+        self.session.step_emulator(timeout)
+    }
+
+    pub fn standing_by(&self) -> bool {
+        self.session.app().standing_by() && !self.rebuilding_labels()
     }
 
     pub fn rebuilding_labels(&self) -> bool {

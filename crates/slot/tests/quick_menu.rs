@@ -936,7 +936,7 @@ fn only_the_clock_from_the_menu_offers_b_back() {
 }
 
 #[test]
-fn brightness_steps_from_one_to_nine_and_never_to_zero() {
+fn brightness_steps_from_one_to_fifteen_and_never_to_zero() {
     let (d, mut a, _) = on_carousel_with(SlotState {
         brightness: 3,
         ..SlotState::default()
@@ -950,12 +950,12 @@ fn brightness_steps_from_one_to_nine_and_never_to_zero() {
         press(&mut a, btn);
         assert_eq!(a.brightness(), want, "{btn:?}");
     }
-    for _ in 0..12 {
+    for _ in 0..20 {
         press(&mut a, Btn::Right);
     }
-    assert_eq!(a.brightness(), 9);
+    assert_eq!(a.brightness(), 15);
     a.flush_state();
-    assert_eq!(read_slot_state(d.path()).brightness, 9);
+    assert_eq!(read_slot_state(d.path()).brightness, 15);
 
     let (_d, mut a, _) = on_carousel_with(SlotState {
         brightness: 1,

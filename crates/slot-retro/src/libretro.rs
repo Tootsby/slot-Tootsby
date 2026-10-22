@@ -335,14 +335,16 @@ unsafe extern "C" fn video_refresh(
                 PixelFormat::Rgb565 => {
                     for x in 0..cols {
                         let p = ptr::read_unaligned((src as *const u16).add(x));
-                        let r = ((p >> 11) & 0x1f) as u8;
-                        let g = ((p >> 5) & 0x3f) as u8;
-                        let b = (p & 0x1f) as u8;
-                        let o = row + x * 4;
-                        h.video[o] = (b << 3) | (b >> 2);
-                        h.video[o + 1] = (g << 2) | (g >> 4);
-                        h.video[o + 2] = (r << 3) | (r >> 2);
-                        h.video[o + 3] = 0;
+                        let r = u32::from((p >> 11) & 0x1f);
+                        let g = u32::from((p >> 5) & 0x3f);
+                        let b = u32::from(p & 0x1f);
+                        let px = ((b << 3) | (b >> 2))
+                            | (((g << 2) | (g >> 4)) << 8)
+                            | (((r << 3) | (r >> 2)) << 16);
+                        ptr::write_unaligned(
+                            h.video.as_mut_ptr().add(row + x * 4) as *mut u32,
+                            px.to_le(),
+                        );
                     }
                 }
             }
@@ -623,6 +625,13 @@ impl RetroCore for LibretroCore {
 
     fn take_audio(&mut self) -> Vec<i16> {
         std::mem::take(&mut self.host.audio)
+    }
+
+    fn recycle_audio(&mut self, mut buf: Vec<i16>) {
+        if self.host.audio.is_empty() && buf.capacity() > self.host.audio.capacity() {
+            buf.clear();
+            self.host.audio = buf;
+        }
     }
 
     fn serialize(&mut self) -> Result<Vec<u8>, CoreError> {

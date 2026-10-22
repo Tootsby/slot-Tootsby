@@ -16,6 +16,7 @@ use crate::core::{open_core, Opened};
 use crate::emu::{CoreState, EmuHandle, Speed};
 use crate::frames::FrameRef;
 use crate::input::Pad;
+use crate::pacing::FrameClock;
 use crate::persist;
 use crate::prefetch::Prefetch;
 
@@ -127,9 +128,16 @@ impl Session {
         }
     }
 
-    pub fn step_emulator(&self, present: Duration, timeout: Duration) -> bool {
+    pub fn frame_clock(&self) -> FrameClock {
+        match &self.emu {
+            Some(emu) if self.playing() && !self.actually_fast_forwarding() => emu.frame_clock(),
+            _ => FrameClock::default(),
+        }
+    }
+
+    pub fn step_emulator(&self, timeout: Duration) -> bool {
         self.emu.as_ref().is_some_and(|emu| {
-            emu.tick(present);
+            emu.tick();
             emu.wait_frame(timeout)
         })
     }

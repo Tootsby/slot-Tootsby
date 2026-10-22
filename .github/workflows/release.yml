@@ -83,12 +83,28 @@ jobs:
         run: |
           set -eu
           cat > notes.md <<NOTES
-          ## Custom Fork Changes (${GITHUB_REF_NAME})
-          - **Synced with Upstream v1.8.0**: Includes multi-disc `.m3u` playlist support, unified Game Options, and performance improvements.
-          - **Late-Night Screen Controls**: Lowered the hardware minimum brightness floor back to \`1/255\` and added a toggleable **Extra Dim** software filter under **Settings -> Screen -> General** and the in-game **Screen** menu.
-          - **Sharp-Shimmerless Shader**: Built-in \`Sharp-Shimmerless\` scaling shader under **Screen -> Scaling -> Filter** for crisp, shimmer-free non-integer scaling.
-          - **Interframe Blending**: Toggleable under **System -> Performance -> Frame Blending** for flicker-heavy games (fixed paused menu preview bug).
-          - **Controls & System Additions**: Added **Alternate A/B** and **Alternate L/R** button mappings, in-game screenshots via \`SELECT + X\`, and a **Lid Power Off -> Off** option.
+          ## What's New in ${GITHUB_REF_NAME} (RG SP Custom Edition)
+
+          ### Display, Latency & Color Calibration
+          - **120 Hz Display Scanout & Native Frame Pacing**: Drives the Anbernic RG SP panel at \`120 Hz\` during gameplay and paces the emulation loop at native GBA/GB refresh (\`59.7275 Hz\`, \`16,742,706 ns\`) instead of \`60.0 Hz\`, cutting scanout latency in half (\`4.2 ms\` avg vs \`8.3 ms\`) and eliminating periodic audio/video frame judder. Automatically switches back to \`60 Hz\` on the cartridge shelf to save power.
+          - **RG SP Hardware Display Calibration LUT**: Applies a 33×33×33 3D color calibration cube (\`rgsp.cube\`) folded into the \`RGB565 -> XRGB8888\` framebuffer present table at startup with zero per-frame CPU overhead.
+          - **Granular 15-Step Brightness (\`1/255\` Floor) + Extra Dim Filter**: Expanded brightness control from 10 to **15 steps** along a smooth perceptual power curve (\`1.9\`) starting at hardware minimum \`1/255\`, paired with the toggleable **Extra Dim** software filter under **Settings -> Screen -> General** and the in-game **Screen** menu.
+          - **Sharp-Shimmerless Shader & Interframe Blending**: Includes the \`Sharp-Shimmerless\` scaling shader and per-platform **Interframe Blending** (with paused menu preview fix).
+
+          ### Battery Life & Performance
+          - **Software Standby (\`10 FPS\` Idle Throttling)**: Automatically drops the shelf/menu loop to \`10 FPS\` after 30 seconds of inactivity when not in a game, restoring full \`60 FPS\` on the first button press.
+          - **System-Level Power Savings**: Switches the H700 CPU scaling governor from \`performance\` to \`schedutil\`, powers off unused USB host controllers (\`ohci1-3\`, \`ehci1-3\`), and unloads the \`8821cs\` Wi-Fi kernel module 20 seconds after boot when idle—automatically reloading \`8821cs\` via \`modprobe\` whenever a Link session starts.
+          - **Emulation Loop Micro-Optimizations**: Reuses audio sample buffers across frames (\`recycle_audio\`) and widens \`RGB565\` pixels 2-at-a-time in 32-bit registers before shader passes.
+
+          ### Controls & Bundled Wallpapers
+          - **6 Custom Skeuomorphic Wallpapers (\`720×480\`)**: Bundled in \`Wallpapers/\` — 3 minimalist clean surfaces (\`Dark Walnut\`, \`Charcoal Ebony\`, \`Matte Slate\`) and 3 warm wood shelves with organized retro desktop clutter (\`Tinkerer Workbench\`, \`Collector Desk\`, \`Late Night Study\`).
+          - **Controls & System Additions**: Includes **Alternate A/B** and **Alternate L/R** mappings, in-game screenshots via \`SELECT + X\`, and **Lid Power Off -> Off**.
+
+          ### Credits & Acknowledgements
+          - **[Brandon Kowalski (\`@BrandonKowalski\`)](https://github.com/BrandonKowalski/slot)** — Original creator of \`slot\`.
+          - **[Markus (\`@MarkusMaribu\`)](https://github.com/MarkusMaribu)** — Skeuomorphic cartridge shelf, slot hardware, button legends, and platform bezel artwork.
+          - **[Vaibhav (\`@pvaibhav\`)](https://github.com/pvaibhav/slot)** — BaseOS, RG SP 120 Hz scanout, native \`59.7275 Hz\` pacing, 3D LUT display calibration, \`schedutil\`/USB/Wi-Fi power savings, and core loop optimizations.
+          - **[\`@suprsomething\`](https://github.com/suprsomething/slot.advance)** — Software standby (\`10 FPS\` idle throttling) and power-saving improvements.
 
           ---
           Unzip and copy the contents of \`slot-${GITHUB_REF_NAME}/\` onto SD2.

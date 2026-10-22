@@ -2,7 +2,15 @@
 
 Add .png files here. Pick one in Settings > General > Wallpaper.
 
-Make it your screen size:
+Bundled 720 x 480 Wallpapers (RG SP):
+  - Dark Walnut.png          (Minimalist dark walnut wood grain)
+  - Charcoal Ebony.png       (Minimalist charcoal-stained wood grain)
+  - Matte Slate.png          (Minimalist matte slate desk mat)
+  - Tinkerer Workbench.png   (Warm wood shelf with brass screwdriver, multimeter, and cart shells)
+  - Collector Desk.png       (Warm wood shelf with leather field notebook, fountain pen, and link cable)
+  - Late Night Study.png     (Warm wood shelf with ceramic coffee mug, strategy guide corner, and headphones)
+
+Make custom wallpapers your screen size:
 
   Device         Size
   RG SP          720 x 480
