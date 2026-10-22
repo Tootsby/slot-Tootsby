@@ -198,6 +198,7 @@ pub struct SlotState {
     pub cart_platform: Option<Platform>,
     pub brightness: u8,
     pub blue_light: u8,
+    pub extra_dim: bool,
     pub volume: u8,
     pub volume_hp: u8,
     pub muted: bool,
@@ -391,6 +392,7 @@ impl Default for SlotState {
             cart_platform: None,
             brightness: 5,
             blue_light: 0,
+            extra_dim: false,
             volume: 60,
             volume_hp: 60,
             muted: false,
@@ -510,6 +512,7 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         "colour_correction_gbc={}\n",
         s.colour_correction_gbc as u8
     ));
+    text.push_str(&format!("extra_dim={}\n", s.extra_dim as u8));
     text.push_str(&format!("blending_gba={}\n", s.blending_gba.name()));
     text.push_str(&format!("blending_gb={}\n", s.blending_gb.name()));
     text.push_str(&format!("blending_gbc={}\n", s.blending_gbc.name()));
@@ -543,6 +546,7 @@ fn parse(text: &str) -> Option<SlotState> {
     let mut cart_platform = None;
     let mut brightness = None;
     let mut blue_light = None;
+    let mut extra_dim = None;
     let mut volume = None;
     let mut volume_hp = None;
     let mut muted = None;
@@ -588,6 +592,7 @@ fn parse(text: &str) -> Option<SlotState> {
             "cart_platform" => cart_platform = platform_value(value),
             "brightness" => brightness = Some(level(value, BRIGHTNESS_MAX)?),
             "blue_light" => blue_light = Some(level(value, BLUE_LIGHT_MAX)?),
+            "extra_dim" => extra_dim = flag(value),
             "volume" => volume = Some(level(value, VOLUME_MAX)?),
             "volume_hp" => volume_hp = Some(level(value, VOLUME_MAX)?),
             "muted" => muted = Some(level(value, 1)? == 1),
@@ -634,6 +639,7 @@ fn parse(text: &str) -> Option<SlotState> {
         cart_platform,
         brightness: brightness?,
         blue_light: blue_light?,
+        extra_dim: extra_dim.unwrap_or(fallback.extra_dim),
         volume: volume?,
         volume_hp: volume_hp.or(volume)?,
         muted: muted?,

@@ -60,11 +60,11 @@ fn the_backlight_steps_span_whatever_range_the_kernel_reports() {
 }
 
 #[test]
-fn step_one_is_the_dimmest_value_the_rg34xx_lights() {
+fn step_one_is_the_dimmest_lit_value() {
     let d = sysfs("255", "87");
     let mut p = platform(&d);
     p.set_backlight(1);
-    assert_eq!(brightness(&d), 8);
+    assert_eq!(brightness(&d), 1);
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn the_steps_follow_the_curve_from_the_floor_to_full() {
             brightness(&d)
         })
         .collect();
-    assert_eq!(wrote, [0, 8, 14, 30, 52, 81, 117, 157, 204, 255]);
+    assert_eq!(wrote, [0, 1, 8, 23, 47, 77, 113, 155, 202, 255]);
 }
 
 #[test]

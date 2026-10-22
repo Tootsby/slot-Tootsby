@@ -951,6 +951,7 @@ impl App {
             (QuickRow::Bezel, Platform::Gbc) => QuickRow::GbcBezel,
             (QuickRow::PlayBrightness, _) => QuickRow::Brightness,
             (QuickRow::PlayBlueLight, _) => QuickRow::BlueLight,
+            (QuickRow::PlayExtraDim, _) => QuickRow::ExtraDim,
             (row, _) => row,
         }
     }
@@ -960,7 +961,9 @@ impl App {
             QuickRow::Shader
             | QuickRow::ColourCorrection
             | QuickRow::PlayBrightness
-            | QuickRow::PlayBlueLight => self.quick_value(self.playing_row(row)),
+            | QuickRow::PlayBlueLight
+            | QuickRow::PlayExtraDim => self.quick_value(self.playing_row(row)),
+            QuickRow::ExtraDim => Some(QuickValue::flag(self.state.extra_dim)),
             QuickRow::Blending => Some(blending_value(self.blending_in_play())),
             QuickRow::GbaBlending => Some(blending_value(self.state.blending_gba)),
             QuickRow::GbBlending => Some(blending_value(self.state.blending_gb)),
@@ -2119,6 +2122,10 @@ impl App {
         self.state.appearance.light()
     }
 
+    pub fn extra_dim(&self) -> bool {
+        self.state.extra_dim
+    }
+
     pub fn status_ink(&self) -> [u8; 3] {
         match self.phase {
             Phase::Playing { .. } | Phase::Polaroids { .. } => footer_ink(false),
@@ -2609,8 +2616,10 @@ impl App {
             }
             QuickRow::Brightness
             | QuickRow::BlueLight
+            | QuickRow::ExtraDim
             | QuickRow::PlayBrightness
             | QuickRow::PlayBlueLight
+            | QuickRow::PlayExtraDim
             | QuickRow::EjectSave
             | QuickRow::Turbo
             | QuickRow::Rewind
@@ -2833,12 +2842,14 @@ impl App {
             QuickRow::Turbo => s.turbo = !s.turbo,
             QuickRow::Rewind => s.rewind = !s.rewind,
             QuickRow::Theme => s.appearance = s.appearance.toggle(),
+            QuickRow::ExtraDim => s.extra_dim = !s.extra_dim,
             QuickRow::WallpaperTint => s.wallpaper_tint = s.wallpaper_tint.step(right),
             QuickRow::ScreenGeneral
             | QuickRow::Brightness
             | QuickRow::BlueLight
             | QuickRow::PlayBrightness
             | QuickRow::PlayBlueLight
+            | QuickRow::PlayExtraDim
             | QuickRow::Wallpaper
             | QuickRow::Recents
             | QuickRow::ShowTitles

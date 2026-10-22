@@ -140,8 +140,12 @@ fn the_in_game_screen_page_ends_with_brightness_and_blue_light() {
     a.set_power(power);
     let shown = QuickRow::PlayBrightness.shown(&a.in_game_hidden());
     assert_eq!(
-        shown[shown.len() - 2..],
-        [QuickRow::PlayBrightness, QuickRow::PlayBlueLight]
+        shown[shown.len() - 3..],
+        [
+            QuickRow::PlayBrightness,
+            QuickRow::PlayBlueLight,
+            QuickRow::PlayExtraDim
+        ]
     );
     let before = a.brightness();
     go_to(&mut a, QuickRow::PlayBrightness);
@@ -156,6 +160,11 @@ fn the_in_game_screen_page_ends_with_brightness_and_blue_light() {
     assert_eq!(a.in_game_menu(), Some(QuickRow::PlayBlueLight));
     press(&mut a, Btn::Right);
     assert_eq!(a.blue_light(), 1);
+    press(&mut a, Btn::Down);
+    assert_eq!(a.in_game_menu(), Some(QuickRow::PlayExtraDim));
+    assert!(!a.extra_dim());
+    press(&mut a, Btn::Right);
+    assert!(a.extra_dim());
 }
 
 #[test]

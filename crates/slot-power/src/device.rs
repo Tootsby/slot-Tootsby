@@ -12,7 +12,7 @@ use crate::{Battery, Charge, LedState, Platform, RepairResult};
 
 const TOP_STEP: u32 = 9;
 
-const BACKLIGHT_FLOOR: f64 = 8.0 / 255.0;
+const BACKLIGHT_FLOOR: f64 = 1.0 / 255.0;
 
 const BACKLIGHT_CURVE: f64 = 1.75;
 

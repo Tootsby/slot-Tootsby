@@ -90,6 +90,8 @@ pub enum QuickRow {
     BlueLight,
     PlayBrightness,
     PlayBlueLight,
+    ExtraDim,
+    PlayExtraDim,
     GbaBlending,
     GbcBlending,
     GbBlending,
@@ -102,7 +104,7 @@ pub enum QuickRow {
 }
 
 impl QuickRow {
-    pub const ALL: [QuickRow; 88] = [
+    pub const ALL: [QuickRow; 90] = [
         QuickRow::FastForward,
         QuickRow::FastForwardSound,
         QuickRow::Screen,
@@ -182,6 +184,8 @@ impl QuickRow {
         QuickRow::BlueLight,
         QuickRow::PlayBrightness,
         QuickRow::PlayBlueLight,
+        QuickRow::ExtraDim,
+        QuickRow::PlayExtraDim,
         QuickRow::GbaBlending,
         QuickRow::GbcBlending,
         QuickRow::GbBlending,
@@ -266,7 +270,11 @@ impl QuickRow {
         QuickRow::ScreenGb,
     ];
 
-    pub const SCREEN_GENERAL: [QuickRow; 2] = [QuickRow::Brightness, QuickRow::BlueLight];
+    pub const SCREEN_GENERAL: [QuickRow; 3] = [
+        QuickRow::Brightness,
+        QuickRow::BlueLight,
+        QuickRow::ExtraDim,
+    ];
 
     pub const SCREEN_GBA: [QuickRow; 4] = [
         QuickRow::GbaShader,
@@ -313,7 +321,7 @@ impl QuickRow {
         QuickRow::PlayControls,
     ];
 
-    pub const PLAY_SCREEN: [QuickRow; 7] = [
+    pub const PLAY_SCREEN: [QuickRow; 8] = [
         QuickRow::Shader,
         QuickRow::Bezel,
         QuickRow::Palette,
@@ -321,6 +329,7 @@ impl QuickRow {
         QuickRow::Blending,
         QuickRow::PlayBrightness,
         QuickRow::PlayBlueLight,
+        QuickRow::PlayExtraDim,
     ];
 
     pub fn index(self) -> usize {
@@ -333,8 +342,12 @@ impl QuickRow {
             | QuickRow::ScreenGba
             | QuickRow::ScreenGbc
             | QuickRow::ScreenGb => &QuickRow::SCREEN,
-            QuickRow::Brightness | QuickRow::BlueLight => &QuickRow::SCREEN_GENERAL,
-            QuickRow::PlayBrightness | QuickRow::PlayBlueLight => &QuickRow::PLAY_SCREEN,
+            QuickRow::Brightness | QuickRow::BlueLight | QuickRow::ExtraDim => {
+                &QuickRow::SCREEN_GENERAL
+            }
+            QuickRow::PlayBrightness | QuickRow::PlayBlueLight | QuickRow::PlayExtraDim => {
+                &QuickRow::PLAY_SCREEN
+            }
             QuickRow::GbaShader
             | QuickRow::GbaColourCorrection
             | QuickRow::GbaBlending
@@ -467,6 +480,7 @@ impl QuickRow {
             QuickRow::ScreenGeneral => "General",
             QuickRow::Brightness | QuickRow::PlayBrightness => "Brightness",
             QuickRow::BlueLight | QuickRow::PlayBlueLight => "Blue Light",
+            QuickRow::ExtraDim | QuickRow::PlayExtraDim => "Extra Dim",
             QuickRow::DateTime => "Date & Time",
             QuickRow::About => "About",
             QuickRow::GbaShader => "Shader",
