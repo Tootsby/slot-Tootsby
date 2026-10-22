@@ -83,6 +83,14 @@ jobs:
         run: |
           set -eu
           cat > notes.md <<NOTES
+          ## Custom Fork Changes (${GITHUB_REF_NAME})
+          - **Synced with Upstream v1.8.0**: Includes multi-disc `.m3u` playlist support, unified Game Options, and performance improvements.
+          - **Late-Night Screen Controls**: Lowered the hardware minimum brightness floor back to \`1/255\` and added a toggleable **Extra Dim** software filter under **Settings -> Screen -> General** and the in-game **Screen** menu.
+          - **Sharp-Shimmerless Shader**: Built-in \`Sharp-Shimmerless\` scaling shader under **Screen -> Scaling -> Filter** for crisp, shimmer-free non-integer scaling.
+          - **Interframe Blending**: Toggleable under **System -> Performance -> Frame Blending** for flicker-heavy games (fixed paused menu preview bug).
+          - **Controls & System Additions**: Added **Alternate A/B** and **Alternate L/R** button mappings, in-game screenshots via \`SELECT + X\`, and a **Lid Power Off -> Off** option.
+
+          ---
           Unzip and copy the contents of \`slot-${GITHUB_REF_NAME}/\` onto SD2.
 
           Emulation by mGBA (MPL-2.0) and gpSP (GPL-2.0). Their licences, patches and gpSP's source are in \`System/licenses/\`.
