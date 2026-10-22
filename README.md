@@ -29,15 +29,15 @@ A full user guide for the base project can be found at [slot-cfw.fyi](https://sl
 On top of upstream `slot v1.8.0`, this fork adds hardware-specific display, latency, power, and aesthetic improvements tailored for the **Anbernic RG SP**:
 
 ### Display, Shaders & Late-Night Play
-- **120 Hz Display Scanout & Native Core Frame Pacing**: Drives the RG SP's panel at `120 Hz` during gameplay and paces the emulation loop at native GBA/GB refresh (`59.7275 Hz`, `16,742,706 ns`) instead of `60.0 Hz`, cutting scanout latency in half (`4.2 ms` avg vs `8.3 ms`) and eliminating periodic audio/video judder. Automatically switches back to `60 Hz` on the cartridge shelf to save power.
-- **RG SP Hardware Display Calibration LUT**: Applies a 33×33×33 3D color calibration cube (`rgsp.cube`) folded into a zero-cost `65,536`-entry `RGB565 -> XRGB8888` lookup table at framebuffer present time, correcting the uncalibrated RG SP panel's color cast across both the shelf UI and in-game rendering.
+- **RG SP Hardware Display Calibration LUT**: Applies a 256-entry hardware gamma/color calibration table (`rgsp.cube`, ported from NextUI) directly to the Allwinner Display Engine (`/dev/disp`) at startup with zero per-frame CPU or GPU overhead, correcting the uncalibrated RG SP panel's color cast across both the shelf UI and in-game rendering.
 - **Granular 15-Step Brightness (`1/255` Floor) + Extra Dim Filter**: Expanded brightness control from 10 to **15 steps** along a smooth perceptual power curve (`1.9`) starting at hardware minimum `1/255`, paired with a toggleable **Extra Dim** software filter under **Settings → Screen → General** and the in-game **Screen** menu for comfortable late-night play.
+- **Predictive Late-Latching 60 Hz VSync Pacing**: Retains upstream `slot`'s 1:1 VSync-locked predictive late-latching pacer (`period - (max_work + 1.5 ms)`) and `TickRate` 48 kHz DRC audio lock for rock-solid 60 fps consistency and a full ~15.2 ms per-frame CPU budget on demanding GBA ROM hacks.
 - **Sharp-Shimmerless Shader**: Built-in `Sharp-Shimmerless` scaling filter (**Screen → GBA / GB / GBC → Shader**) for crisp, shimmer-free non-integer scaling alongside `LCD3x`, `Grid`, `Dot`, and `Simpletex`.
 - **Interframe Blending**: Toggleable per-platform frame blending (**Settings → Gameplay → Interframe Blending**) to smooth out 30 Hz transparency flicker in classic GBA/GB titles without corrupting the paused in-game menu backdrop.
 
 ### Battery Life & Performance
-- **Software Standby (`10 FPS` Idle Throttling)**: Automatically drops the shelf/menu loop to `10 FPS` after 30 seconds of inactivity and restores full frame rate on the first button press.
-- **System-Level Power Savings**: Switches the H700 CPU scaling governor from `performance` to `schedutil`, powers down unused USB host controllers (`ohci1-3`, `ehci1-3`), and unloads the `8821cs` Wi-Fi kernel module after boot when idle—automatically reloading it via `modprobe` whenever a Link session is started.
+- **Software Standby & Dynamic CPU Governor**: Runs the H700 CPU on the `performance` governor (`1.51 GHz`) while active for zero frequency-ramp stutter in heavy GBA ROM hacks, and automatically stops OpenGL rendering and switches the CPU governor to `schedutil` while dozing (lid closed or POWER tap), waking back to `performance` on the first button press or lid open.
+- **System-Level Power Savings**: Powers down unused USB host controllers (`ohci1-3`, `ehci1-3`) at boot and unloads the `8821cs` Wi-Fi kernel module after 20 seconds when idle—automatically reloading it via `modprobe` whenever a Link session is started.
 - **Emulation Loop Micro-Optimizations**: Reuses audio sample buffers across frames (`recycle_audio`) and widens RGB565 pixels two at a time in 32-bit registers before shader passes.
 
 ### Controls, Quality-of-Life & Bundled Wallpapers
@@ -52,7 +52,7 @@ While upstream `slot` supports several H700 handhelds, **this fork is specifical
 
 | Device             | Target Status in This Fork                   | Resolution |
 |--------------------|----------------------------------------------|------------|
-| **Anbernic RG SP** | **Primary Target (120 Hz + Display LUT)**    | 720 × 480  |
+| **Anbernic RG SP** | **Primary Target (Hardware Display LUT)**    | 720 × 480  |
 | Anbernic RG34XX    | Compatible (Upstream Support)                | 720 × 480  |
 | Anbernic RG34XXSP  | Compatible (Includes Display LUT)            | 720 × 480  |
 | Anbernic RG35XXSP  | Compatible (Upstream Support)                | 640 × 480  |
@@ -68,8 +68,8 @@ This fork builds upon the work of several talented developers and artists in the
 
 - **[Brandon Kowalski (`@BrandonKowalski`)](https://github.com/BrandonKowalski/slot)** — Creator of [`slot`](https://slot-cfw.fyi), its architecture, cartridge shelf experience, link play integration, and documentation.
 - **[Markus (`@MarkusMaribu`)](https://github.com/MarkusMaribu)** — Artist behind `slot`'s skeuomorphic cartridge shelf, slot hardware, button legends, and platform bezels.
-- **[Vaibhav (`@pvaibhav`)](https://github.com/pvaibhav/slot)** — Creator of [BaseOS](https://github.com/pvaibhav/baseos) for H700 devices, and author of the RG SP 120 Hz display mode switching, native `59.7275 Hz` frame pacing, 3D LUT hardware display calibration (`rgsp.cube`), `schedutil`/USB/Wi-Fi power management, and emulation loop optimizations adapted into this fork.
-- **[`@suprsomething`](https://github.com/suprsomething/slot.advance)** — Author of [`slot.advance`](https://github.com/suprsomething/slot.advance), whose software standby (`10 FPS` idle throttling) and power-saving investigations informed this fork.
+- **[Vaibhav (`@pvaibhav`)](https://github.com/pvaibhav/slot)** — Creator of [BaseOS](https://github.com/pvaibhav/baseos) for H700 devices, and author of the RG SP hardware display calibration (`displaycal`), USB/Wi-Fi power management, and emulation loop optimizations adapted into this fork.
+- **[`@suprsomething`](https://github.com/suprsomething/slot.advance)** — Author of [`slot.advance`](https://github.com/suprsomething/slot.advance), whose software standby (`Standby` doze render suspension) and power-saving investigations informed this fork.
 - **Emulation & Shaders** — The **mGBA** (endrift / Jeffrey Pfau, MPL-2.0) and **gpSP** (Exophase, davidgfnet & libretro contributors, GPL-2.0) teams, plus the libretro shader authors (`LCD3x`, `Sharp-Shimmerless`, `Simpletex`).
 
 ---

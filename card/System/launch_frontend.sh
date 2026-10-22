@@ -36,7 +36,7 @@ echo "|/bin/sh $SYS/coresave.sh %p %s %e %t" > /proc/sys/kernel/core_pattern 2>/
 
 for governor in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
 	[ -w "$governor" ] || continue
-	printf '%s\n' schedutil > "$governor" 2>/dev/null || log "could not set schedutil for $governor"
+	printf '%s\n' performance > "$governor" 2>/dev/null || log "could not set performance for $governor"
 done
 
 for usb in \

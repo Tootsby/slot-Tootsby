@@ -45,7 +45,7 @@ fn brightness(d: &TempDir) -> u32 {
 }
 
 fn platform(d: &TempDir) -> DevicePlatform {
-    DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"), None)
+    DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"))
 }
 
 #[test]
@@ -180,7 +180,7 @@ fn the_probe_reports_what_it_found() {
 #[test]
 fn a_probe_that_found_nothing_says_so_rather_than_saying_nothing() {
     let d = tempfile::tempdir().unwrap();
-    let report = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"), None).report();
+    let report = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard")).report();
     assert!(report.contains("no backlight"), "{report}");
     assert!(report.contains("no battery"), "{report}");
     assert!(report.contains("no rtc"), "{report}");
@@ -214,7 +214,7 @@ fn dispdbg(d: &TempDir, file: &str) -> String {
 #[test]
 fn a_tree_with_no_backlight_class_drives_the_panel_through_dispdbg() {
     let d = dispdbg_tree();
-    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"), None);
+    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"));
     p.set_backlight(15);
     assert_eq!(dispdbg(&d, "name"), "lcd0");
     assert_eq!(dispdbg(&d, "command"), "setbl");
@@ -342,7 +342,7 @@ fn relinking_adb_rebinds_the_gadget_to_the_controller() {
     fs::create_dir_all(&gadget).unwrap();
     fs::write(gadget.join("UDC"), "\n").unwrap();
 
-    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"), None);
+    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"));
     assert!(
         p.relink_adb(),
         "the gadget and a controller were both there"
@@ -357,7 +357,7 @@ fn relinking_adb_rebinds_the_gadget_to_the_controller() {
 fn relinking_adb_without_a_gadget_does_nothing() {
     let d = tempfile::tempdir().unwrap();
     fs::create_dir_all(d.path().join("class/udc/5100000.udc-controller")).unwrap();
-    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"), None);
+    let mut p = DevicePlatform::probe(d.path(), PathBuf::from("/mnt/sdcard"));
     assert!(!p.relink_adb());
 }
 

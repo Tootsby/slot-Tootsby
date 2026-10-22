@@ -1,9 +1,9 @@
 //! Device panel calibration, ported from NextUI's common/displaycal.c. The hardware
 //! applies this after composition, to games and UI alike, with no per-frame work.
 
-use std::ffi::c_ulong;
 #[cfg(unix)]
 use std::ffi::c_int;
+use std::ffi::c_ulong;
 #[cfg(unix)]
 use std::fs::OpenOptions;
 use std::io;

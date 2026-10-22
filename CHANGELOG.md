@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.8.0-tootsby.3](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.0-tootsby.3) — RG SP Custom Fork
+
+- **Restored 1:1 Predictive Late-Latching 60 Hz VSync Pacing**: Removed the `120 Hz` panel overclock and `FramePacer` double-stepping that caused demanding GBA ROM hacks on `mGBA` to miss 8.39 ms VSync latches and double-step two frames in one cycle. Restored upstream `slot`'s predictive late-latching `Pacer` (`period - (max_work + 1.5 ms)`) and `TickRate` DRC audio lock for a full ~15.2 ms per-frame CPU budget and 100% consistent 60 fps pacing.
+- **Dynamic CPU Governor (`performance` Active / `schedutil` in Standby)**: Keeps the H700 CPU locked to the `performance` governor (`1.51 GHz`) during gameplay and active UI use so heavy GBA ROM hacks never suffer from `schedutil` downclock stalls between frames, while automatically switching to `schedutil` when resting in software standby (`Doze`) and back to `performance` immediately on wake.
+
 ## [1.8.0-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.0-tootsby.2) — RG SP Custom Fork
 
 ### Display, Latency & Calibration (RG SP)

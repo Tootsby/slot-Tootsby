@@ -22,6 +22,9 @@ pub mod crash;
 #[cfg(not(unix))]
 pub mod crash {
     pub fn install() {}
+    pub fn stopping() -> bool {
+        false
+    }
 }
 pub mod drc;
 pub mod emu;
@@ -38,7 +41,6 @@ pub mod link_radio;
 pub mod link_screen;
 pub mod link_start;
 pub mod link_state;
-pub mod pacing;
 pub mod panel_turn;
 pub mod persist;
 pub mod prefetch;
