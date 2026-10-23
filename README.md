@@ -1,8 +1,8 @@
-# slot (RG SP Custom Edition)
+# slot (Tootsby fork)
 
-A bespoke, Game Boy-centric frontend for the **Anbernic RG SP** (`rgsp`), forked from [Brandon Kowalski's `slot`](https://github.com/BrandonKowalski/slot) (`v1.8.0`).
+A bespoke, Game Boy-centric frontend for the **Anbernic RG SP** and other H700 handhelds, forked from [Brandon Kowalski's `slot`](https://github.com/BrandonKowalski/slot) (`v1.8.1`).
 
-Designed specifically around the 720×480 3:2 IPS panel and clamshell form factor of the Anbernic RG SP, with support for **GBA**, **GBC**, and **GB** cartridges.
+Supports **GBA**, **GBC**, and **GB** games.
 
 > [!IMPORTANT]
 > ROMs must be unzipped. `slot` does not read `.zip` or `.7z` files.
@@ -24,53 +24,56 @@ A full user guide for the base project can be found at [slot-cfw.fyi](https://sl
 
 ---
 
-# Fork Additions & RG SP Enhancements
+# What this fork adds
 
-On top of upstream `slot v1.8.0`, this fork adds hardware-specific display, latency, power, and aesthetic improvements tailored for the **Anbernic RG SP**:
+This is a personal fork of upstream `slot` (currently synced to **v1.8.1**). I play on an Anbernic RG SP, but the fork deliberately avoids device-specific tweaks so it stays easy to keep in sync with upstream and runs anywhere upstream does.
 
-### Display, Shaders & Late-Night Play
-- **RG SP Hardware Display Calibration LUT**: Applies a 256-entry hardware gamma/color calibration table (`rgsp.cube`, ported from NextUI) directly to the Allwinner Display Engine (`/dev/disp`) at startup with zero per-frame CPU or GPU overhead, correcting the uncalibrated RG SP panel's color cast across both the shelf UI and in-game rendering.
-- **Granular 15-Step Brightness (`1/255` Floor) + Extra Dim Filter**: Expanded brightness control from 10 to **15 steps** along a smooth perceptual power curve (`1.9`) starting at hardware minimum `1/255`, paired with a toggleable **Extra Dim** software filter under **Settings → Screen → General** and the in-game **Screen** menu for comfortable late-night play.
-- **Predictive Late-Latching 60 Hz VSync Pacing**: Retains upstream `slot`'s 1:1 VSync-locked predictive late-latching pacer (`period - (max_work + 1.5 ms)`) and `TickRate` 48 kHz DRC audio lock for rock-solid 60 fps consistency and a full ~15.2 ms per-frame CPU budget on demanding GBA ROM hacks.
-- **Sharp-Shimmerless Shader**: Built-in `Sharp-Shimmerless` scaling filter (**Screen → GBA / GB / GBC → Shader**) for crisp, shimmer-free non-integer scaling alongside `LCD3x`, `Grid`, `Dot`, and `Simpletex`.
-- **Interframe Blending**: Toggleable per-platform frame blending (**Settings → Gameplay → Interframe Blending**) to smooth out 30 Hz transparency flicker in classic GBA/GB titles without corrupting the paused in-game menu backdrop.
+### Screen
+- **Lower brightness for night play**: brightness has 15 steps instead of 9, starting from the panel's dimmest lit level (1/255).
+- **Extra Dim**: a toggle under **Settings → Screen → General** (and on the in-game Screen page) that darkens the picture further than the backlight can go.
+- **Sharp-Shimmerless shader**: an extra shader option for each platform, for crisp scaling without shimmer at non-integer sizes.
+- **Frame Blending**: a per-platform row under **Screen → GBA / GBC / GB** that smooths the 30 Hz flicker some games use for transparency.
 
-### Battery Life & Performance
-- **Software Standby & Dynamic CPU Governor**: Runs the H700 CPU on the `performance` governor (`1.51 GHz`) while active for zero frequency-ramp stutter in heavy GBA ROM hacks, and automatically stops OpenGL rendering and switches the CPU governor to `schedutil` while dozing (lid closed or POWER tap), waking back to `performance` on the first button press or lid open.
-- **System-Level Power Savings**: Powers down unused USB host controllers (`ohci1-3`, `ehci1-3`) at boot and unloads the `8821cs` Wi-Fi kernel module after 20 seconds when idle—automatically reloading it via `modprobe` whenever a Link session is started.
-- **Emulation Loop Micro-Optimizations**: Reuses audio sample buffers across frames (`recycle_audio`) and widens RGB565 pixels two at a time in 32-bit registers before shader passes.
+### Controls
+- **Alternate A/B and L/R** buttons that can be bound alongside the main ones.
+- **Screenshots** with `SELECT + X` in game, saved to `Screenshots/`.
 
-### Controls, Quality-of-Life & Bundled Wallpapers
-- **Expanded Controls & Shortcuts**: Supports **Alternate A/B** and **Alternate L/R** mappings, in-game PNG screenshots via `SELECT + X` (saved to `Screenshots/`), and a **Lid Power Off → Off** option so closing the clamshell sleeps indefinitely without forced shutdown.
-- **6 Custom Skeuomorphic Wallpapers (`720×480`)**: Ships in `Wallpapers/` with 3 minimalist sticker-free surfaces (`Dark Walnut`, `Charcoal Ebony`, `Matte Slate`) and 3 warm wood shelves with organized retro desktop clutter (`Tinkerer Workbench`, `Collector Desk`, `Late Night Study`).
+### Power
+- **Lid Power Off → Off**: closing the lid can sleep indefinitely instead of powering off after a set time.
+- **Lighter sleep**: while the lid is closed (or POWER was tapped) slot stops drawing frames to the dark screen and only listens for input.
+
+### Wallpapers
+- Six bundled 720×480 wallpapers in `Wallpapers/`: three plain surfaces (Dark Walnut, Charcoal Ebony, Matte Slate) and three wood desks with some clutter on them (Tinkerer Workbench, Collector Desk, Late Night Study).
+
+### Small fixes
+- Reuses audio buffers between frames instead of allocating new ones.
+- A sound device reopened after silence starts with a buffer of silence (upstream issue #125).
 
 ---
 
 # Supported Devices
 
-While upstream `slot` supports several H700 handhelds, **this fork is specifically tuned and tested for the Anbernic RG SP (`BASEOS_TARGET=rgsp`)**.
+Same as upstream. I only test on the **Anbernic RG SP**.
 
-| Device             | Target Status in This Fork                   | Resolution |
-|--------------------|----------------------------------------------|------------|
-| **Anbernic RG SP** | **Primary Target (Hardware Display LUT)**    | 720 × 480  |
-| Anbernic RG34XX    | Compatible (Upstream Support)                | 720 × 480  |
-| Anbernic RG34XXSP  | Compatible (Includes Display LUT)            | 720 × 480  |
-| Anbernic RG35XXSP  | Compatible (Upstream Support)                | 640 × 480  |
-| Anbernic 35XX Plus | Compatible (Upstream Support)                | 640 × 480  |
-| Anbernic RG28XX    | Compatible (Upstream Support)                | 640 × 480  |
-| Anbernic RG35XX-H  | Compatible (Upstream Support)                | 640 × 480  |
+| Device             | Supported | Since Version |
+|--------------------|-----------|---------------|
+| Anbernic RG SP     | Yes       | Always        |
+| Anbernic RG34XX    | Yes       | 1.4.0         |
+| Anbernic RG34XXSP  | Yes       | 1.4.0         |
+| Anbernic RG35XXSP  | Yes       | 1.5.0         |
+| Anbernic 35XX Plus | Yes       | 1.5.0         |
+| Anbernic RG28XX    | Yes       | 1.6.0         |
+| Anbernic RG35XX-H  | Yes       | 1.7.0         |
 
 ---
 
-# Credits & Acknowledgements
+# Credits
 
-This fork builds upon the work of several talented developers and artists in the handheld community:
-
-- **[Brandon Kowalski (`@BrandonKowalski`)](https://github.com/BrandonKowalski/slot)** — Creator of [`slot`](https://slot-cfw.fyi), its architecture, cartridge shelf experience, link play integration, and documentation.
-- **[Markus (`@MarkusMaribu`)](https://github.com/MarkusMaribu)** — Artist behind `slot`'s skeuomorphic cartridge shelf, slot hardware, button legends, and platform bezels.
-- **[Vaibhav (`@pvaibhav`)](https://github.com/pvaibhav/slot)** — Creator of [BaseOS](https://github.com/pvaibhav/baseos) for H700 devices, and author of the RG SP hardware display calibration (`displaycal`), USB/Wi-Fi power management, and emulation loop optimizations adapted into this fork.
-- **[`@suprsomething`](https://github.com/suprsomething/slot.advance)** — Author of [`slot.advance`](https://github.com/suprsomething/slot.advance), whose software standby (`Standby` doze render suspension) and power-saving investigations informed this fork.
-- **Emulation & Shaders** — The **mGBA** (endrift / Jeffrey Pfau, MPL-2.0) and **gpSP** (Exophase, davidgfnet & libretro contributors, GPL-2.0) teams, plus the libretro shader authors (`LCD3x`, `Sharp-Shimmerless`, `Simpletex`).
+- **[Brandon Kowalski](https://github.com/BrandonKowalski/slot)**: creator of `slot`. Almost everything here is his work; see [slot-cfw.fyi](https://slot-cfw.fyi).
+- **[Markus (@MarkusMaribu)](https://github.com/MarkusMaribu)**: the skeuomorphic shelf, cart and bezel art.
+- **[Vaibhav (@pvaibhav)](https://github.com/pvaibhav/slot)**: BaseOS, and the audio buffer reuse adapted from his fork.
+- **[@suprsomething](https://github.com/suprsomething/slot.advance)**: the idea of not drawing while dozing, from `slot.advance`.
+- **mGBA** (MPL-2.0) and **gpSP** (GPL-2.0), the emulators doing the real work.
 
 ---
 

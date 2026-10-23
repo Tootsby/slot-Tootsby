@@ -83,31 +83,23 @@ jobs:
         run: |
           set -eu
           cat > notes.md <<NOTES
-          ## What's New in ${GITHUB_REF_NAME} (RG SP Custom Edition)
+          ## ${GITHUB_REF_NAME}
 
-          ### Performance & Frame Pacing Fix (v1.8.0-tootsby.3)
-          - **Restored 1:1 Predictive Late-Latching 60 Hz VSync Pacing**: Removed the \`120 Hz\` panel overclock and \`FramePacer\` double-stepping that caused demanding GBA ROM hacks on \`mGBA\` to miss 8.39 ms VSync latches and run two frames back-to-back in a single cycle. Restored \`slot\`'s predictive late-latching \`Pacer\` (\`period - (max_work + 1.5 ms)\`) and \`TickRate\` DRC audio lock for a full ~15.2 ms per-frame CPU budget and rock-solid 60 fps consistency.
-          - **Dynamic CPU Governor (\`performance\` Active / \`schedutil\` in Standby)**: Keeps the H700 CPU on \`performance\` (\`1.51 GHz\`) during gameplay and active shelf use so demanding GBA ROM hacks never experience frequency-ramp stalls, and automatically switches to \`schedutil\` while resting in software standby (\`Doze\`).
+          Personal fork of [slot](https://github.com/BrandonKowalski/slot), synced to upstream **1.8.1**. Full notes are in [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md).
 
-          ### Display & Late-Night Play
-          - **RG SP Hardware Display Calibration LUT**: Applies a 256-entry hardware gamma/color calibration table (\`rgsp.cube\`) directly to \`/dev/disp\` at startup with zero per-frame CPU/GPU overhead.
-          - **Granular 15-Step Brightness (\`1/255\` Floor) + Extra Dim Filter**: Expanded brightness control from 10 to **15 steps** along a smooth perceptual power curve (\`1.9\`) starting at hardware minimum \`1/255\`, paired with the toggleable **Extra Dim** software filter under **Settings -> Screen -> General** and the in-game **Screen** menu.
-          - **Sharp-Shimmerless Shader & Interframe Blending**: Includes the \`Sharp-Shimmerless\` scaling shader and per-platform **Interframe Blending** (with paused menu preview fix).
+          **This release**
+          - Includes everything in upstream 1.8.1: Load State on Insert, Fast Forward can be Off, smaller save states, the MBC2 crash fix, and the BaseOS startup sound fix.
+          - Removed the RG SP / RG34XXSP display calibration. Use Color Correction instead.
+          - Removed the CPU governor, USB and Wi-Fi power tweaks. slot now leaves these as BaseOS sets them, like upstream.
 
-          ### Battery Life & System Optimizations
-          - **Software Standby**: Suspends OpenGL frame rendering and drops the CPU governor to \`schedutil\` while dozing (lid closed or POWER tap), waking back to \`performance\` + 60 FPS on the first input.
-          - **System-Level Power Savings**: Powers off unused USB host controllers (\`ohci1-3\`, \`ehci1-3\`) and unloads the \`8821cs\` Wi-Fi kernel module 20 seconds after boot when idle—automatically reloading \`8821cs\` via \`modprobe\` whenever a Link session starts.
-          - **Emulation Loop Micro-Optimizations**: Reuses audio sample buffers across frames (\`recycle_audio\`) and widens \`RGB565\` pixels 2-at-a-time in 32-bit registers before shader passes.
+          **What the fork adds**
+          - 15-step brightness down to 1/255, plus an Extra Dim toggle
+          - Sharp-Shimmerless shader and per-platform Frame Blending
+          - Alternate A/B and L/R buttons, \`SELECT + X\` screenshots
+          - Lid Power Off -> Off, and no drawing while dozing
+          - Six bundled 720x480 wallpapers
 
-          ### Controls & Bundled Wallpapers
-          - **6 Custom Skeuomorphic Wallpapers (\`720×480\`)**: Bundled in \`Wallpapers/\` — 3 minimalist clean surfaces (\`Dark Walnut\`, \`Charcoal Ebony\`, \`Matte Slate\`) and 3 warm wood shelves with organized retro desktop clutter (\`Tinkerer Workbench\`, \`Collector Desk\`, \`Late Night Study\`).
-          - **Controls & System Additions**: Includes **Alternate A/B** and **Alternate L/R** mappings, in-game screenshots via \`SELECT + X\`, and **Lid Power Off -> Off**.
-
-          ### Credits & Acknowledgements
-          - **[Brandon Kowalski (\`@BrandonKowalski\`)](https://github.com/BrandonKowalski/slot)** — Original creator of \`slot\`.
-          - **[Markus (\`@MarkusMaribu\`)](https://github.com/MarkusMaribu)** — Skeuomorphic cartridge shelf, slot hardware, button legends, and platform bezel artwork.
-          - **[Vaibhav (\`@pvaibhav\`)](https://github.com/pvaibhav/slot)** — BaseOS, RG SP hardware display calibration, USB/Wi-Fi power savings, and core loop optimizations.
-          - **[\`@suprsomething\`](https://github.com/suprsomething/slot.advance)** — Software standby (\`Standby\` doze render suspension) and power-saving improvements.
+          Credits: Brandon Kowalski (slot), Markus (art), @pvaibhav (BaseOS), @suprsomething (slot.advance).
 
           ---
           Unzip and copy the contents of \`slot-${GITHUB_REF_NAME}/\` onto SD2.

@@ -38,9 +38,6 @@ wait_dev() {
 }
 
 wifi_up() {
-	if [ ! -d "$NET/wlan0" ]; then
-		modprobe 8821cs 2>/dev/null || true
-	fi
 	wait_dev wlan0 40 || return 0
 	trace "wlan0 present"
 	rfkill unblock wifi 2>/dev/null || true

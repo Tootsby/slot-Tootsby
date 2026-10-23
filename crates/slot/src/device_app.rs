@@ -147,40 +147,17 @@ pub fn run() {
     frontend.drive_emulator();
     let mut pacer = Pacer::new();
     let mut standby = Standby::new();
-    let mut resting = false;
     let (mut frames, mut missed, mut early) = (0u32, 0u32, 0u32);
     loop {
-        if standby.step(frontend.standing_by()) == Step::Rest {
-            if !resting {
-                resting = true;
-                set_cpu_governor("schedutil\n");
-            }
-            std::thread::sleep(STANDBY_REST);
-            input.steer_with_stick(frontend.app().left_stick_dpad());
-            frontend.advance(&mut input);
-            if frontend.restarting() {
-                frontend.restart();
-            }
-            if frontend.repairing() {
-                frontend.repair();
-            }
-            if frontend.powering_off() {
-                frontend.poweroff();
-                return;
-            }
-            if slot::crash::stopping() {
-                eprintln!("slot: told to stop, saving first");
-                frontend.stop();
-                return;
-            }
-            continue;
-        }
+        // While dozing the screen is dark, so keep reading input but skip the emulator,
+        // the draw and the swap until something wakes it.
+        let resting = standby.step(frontend.standing_by()) == Step::Rest;
         if resting {
-            resting = false;
-            set_cpu_governor("performance\n");
+            std::thread::sleep(STANDBY_REST);
             pacer.last_return = None;
+        } else {
+            pacer.wait();
         }
-        pacer.wait();
         let began = Instant::now();
         input.steer_with_stick(frontend.app().left_stick_dpad());
         frontend.advance(&mut input);
@@ -198,6 +175,9 @@ pub fn run() {
             eprintln!("slot: told to stop, saving first");
             frontend.stop();
             return;
+        }
+        if resting {
+            continue;
         }
         frontend.step_emulator(pacer.period, STEP_TIMEOUT);
         frontend.render(&mut compositor, window);
@@ -233,11 +213,4 @@ pub fn run() {
             std::thread::sleep(left);
         }
     }
-}
-
-fn set_cpu_governor(governor: &str) {
-    let _ = std::fs::write(
-        "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor",
-        governor,
-    );
 }

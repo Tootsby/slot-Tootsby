@@ -6,7 +6,6 @@ macro_rules! eprintln {
 }
 
 mod bezel;
-mod displaycal;
 mod draw;
 mod fbdev;
 mod fbo;

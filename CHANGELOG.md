@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.8.1-tootsby.1](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.1-tootsby.1): fork
+
+Synced with upstream 1.8.1 (notes below), and trimmed the fork back to changes that work the same on every device:
+
+- **Removed** the RG SP / RG34XXSP display calibration table. It stacked on top of the Color Correction setting and only applied to two devices. Use Color Correction instead.
+- **Removed** all CPU governor changes. slot leaves the governor as BaseOS sets it, like upstream.
+- **Removed** turning off the USB host controllers and unloading the Wi-Fi driver at boot. Their battery savings were never measured, and the Wi-Fi unload meant Link play had to reload the driver first.
+- **Kept** the lighter sleep (no drawing while dozing), now as a small branch in the main loop instead of a second copy of it.
+- Upstream's fix for the BaseOS startup sound (#135) is applied to this fork's audio thread.
+## [1.8.1](https://github.com/BrandonKowalski/slot/releases/tag/v1.8.1)
+
+- Game Boy games on an MBC2 cartridge, such as Kirby's Pinball Land, no longer freeze after the boot screen. mGBA crashed on the first read of their save RAM; slot now builds it with upstream's fix. (#137)
+- Load State on Insert, a new row on the Gameplay page, decides whether putting a cart in, or booting with one in the slot, loads its state. Auto Save on Eject is renamed Save State on Eject and only decides whether ejecting saves one.
+- Holding Up or Down to jump through the shelf a letter at a time no longer empties the shelf.
+- The BaseOS startup sound plays again. slot no longer takes the speaker while it boots, only once it has something to play. (#135)
+- Save states and rewind are smaller: slot no longer keeps the extra space mGBA sets aside before a game finds its save chip. Metroid Fusion's states drop from 528 KB to 430 KB. (#126)
+- Fast Forward can be set to Off, so holding it does nothing. (#123)
+
 ## [1.8.0-tootsby.3](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.0-tootsby.3) — RG SP Custom Fork
 
 - **Restored 1:1 Predictive Late-Latching 60 Hz VSync Pacing**: Removed the `120 Hz` panel overclock and `FramePacer` double-stepping that caused demanding GBA ROM hacks on `mGBA` to miss 8.39 ms VSync latches and double-step two frames in one cycle. Restored upstream `slot`'s predictive late-latching `Pacer` (`period - (max_work + 1.5 ms)`) and `TickRate` DRC audio lock for a full ~15.2 ms per-frame CPU budget and 100% consistent 60 fps pacing.
@@ -9,11 +27,11 @@
 
 ### Display, Latency & Calibration (RG SP)
 - **120 Hz Display Scanout & Native Frame Pacing**: Drives the Anbernic RG SP panel at `120 Hz` during gameplay and paces the emulation loop at native GBA/GB refresh (`59.7275 Hz`, `16,742,706 ns` per frame) instead of `60.0 Hz`, halving display scanout latency (`4.2 ms` avg vs `8.3 ms`) and eliminating periodic audio/video frame judder. Automatically switches back to `60 Hz` on the cartridge shelf to save power. (Adapted from `@pvaibhav`)
-- **RG SP Hardware Display Calibration LUT**: Applies a 33×33×33 3D color calibration cube (`rgsp.cube` / `rg34xxsp.cube`) folded into the `RGB565 -> XRGB8888` framebuffer present table at startup with zero per-frame CPU overhead. (Adapted from `@pvaibhav`)
+- **RG SP Hardware Display Calibration LUT**: Loads a 256-entry gamma table (`rgsp.cube` / `rg34xxsp.cube`) into the display hardware at startup. (Adapted from `@pvaibhav`; removed in 1.8.1-tootsby.1)
 - **Granular 15-Step Brightness Control (`1/255` Floor)**: Expanded brightness control from 10 to **15 steps** along a perceptual power curve (`1.9`) starting at hardware minimum `1/255` (`[1, 3, 7, 15, 25, 37, 52, 69, 89, 111, 135, 162, 191, 222, 255]`).
 
 ### Battery Life & Performance
-- **Software Standby (`10 FPS` Idle Throttling)**: Automatically drops the shelf/menu frame rate to `10 FPS` (`100 ms` frame budget) after 30 seconds of inactivity when not playing a game, restoring full `60 FPS` on the first button press. (Adapted from `@suprsomething`)
+- **Software Standby**: stops drawing frames while dozing (lid closed or POWER tapped). (Adapted from `@suprsomething`)
 - **System-Level Power Savings**: Switches the H700 CPU scaling governor from `performance` to `schedutil`, powers off unused USB host controllers (`ohci1-3`, `ehci1-3`), and unloads the `8821cs` Wi-Fi kernel module 20 seconds after boot when no Link session is active—automatically reloading `8821cs` via `modprobe` when starting a Link session. (Adapted from `@pvaibhav` & `@suprsomething`)
 - **Emulation Loop Micro-Optimizations**: Reuses the audio sample `Vec<i16>` buffer across frames (`recycle_audio`) and widens `RGB565` pixels 2-at-a-time in 32-bit registers before shader passes. (Adapted from `@pvaibhav`)
 
