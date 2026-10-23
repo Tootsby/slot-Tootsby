@@ -266,22 +266,16 @@ struct Playback<O: Output> {
 }
 
 fn play(ring: &Arc<Ring>, sample_rate: u32) -> Result<Playback<AlsaOutput>, AudioError> {
-    let mut out = AlsaOutput {
+    // Left closed until there is something to play, so the BaseOS startup sound can finish (#135).
+    let out = AlsaOutput {
         alsa: Alsa::load()?,
         pcm: None,
-    };
-    let failing = match out.open(sample_rate) {
-        Ok(()) => false,
-        Err(e) => {
-            eprintln!("slot: audio: {e}, retrying");
-            true
-        }
     };
     ring.reopen(sample_rate);
     Ok(Playback {
         out,
         rate: sample_rate,
-        failing,
+        failing: false,
     })
 }
 
@@ -289,7 +283,7 @@ impl<O: Output> Playback<O> {
     fn run(&mut self, ring: &Ring, stop: &AtomicBool) {
         let mut buf = vec![0i16; PERIOD_FRAMES * CHANNELS as usize];
         let span = Duration::from_secs_f64(PERIOD_FRAMES as f64 / self.rate as f64);
-        let mut silence = Silence::new(RELEASE_AFTER);
+        let mut silence = Silence::quiet(RELEASE_AFTER);
         let mut pace = Pacer::new(span);
         while !stop.load(Ordering::Relaxed) {
             ring.fill(&mut buf);

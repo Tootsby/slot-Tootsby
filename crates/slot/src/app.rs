@@ -683,7 +683,7 @@ impl App {
             Some((at, i)) => {
                 self.shelf_at = at;
                 self.shelf_mut().select(i);
-                self.insert(false);
+                self.insert(!self.state.auto_load);
                 if let Phase::Inserting { resumed, t, .. } = &mut self.phase {
                     *resumed = true;
                     *t = INSERT_S;
@@ -988,6 +988,7 @@ impl App {
             QuickRow::GbcShader => Some(shader_value(self.state.shader_gbc)),
             QuickRow::Rumble => Some(QuickValue::flag(self.state.rumble)),
             QuickRow::LeftStick => Some(QuickValue::flag(self.state.left_stick_dpad)),
+            QuickRow::AutoLoad => Some(QuickValue::flag(self.state.auto_load)),
             QuickRow::EjectSave => Some(QuickValue::flag(self.state.eject_save)),
             QuickRow::Turbo => Some(QuickValue::flag(self.state.turbo)),
             QuickRow::Rewind => Some(QuickValue::flag(self.state.rewind)),
@@ -1921,7 +1922,7 @@ impl App {
     }
 
     pub fn may_fast_forward(&self) -> bool {
-        !self.link_active()
+        self.state.ff_speed != 0 && !self.link_active()
     }
 
     pub fn end_link(&mut self) {
@@ -2429,10 +2430,10 @@ impl App {
                 Action::GbaDown(Btn::A) => self.play_held = Some(now),
                 Action::GbaUp(Btn::A) => {
                     if self.play_held.take().is_some() {
-                        self.insert(!self.state.eject_save);
+                        self.insert(!self.state.auto_load);
                     }
                 }
-                Action::Insert => self.insert(!self.state.eject_save),
+                Action::Insert => self.insert(!self.state.auto_load),
                 _ => {}
             },
             Phase::Inserting { .. } if action == Action::Eject => self.eject(),
@@ -2620,6 +2621,7 @@ impl App {
             | QuickRow::PlayBrightness
             | QuickRow::PlayBlueLight
             | QuickRow::PlayExtraDim
+            | QuickRow::AutoLoad
             | QuickRow::EjectSave
             | QuickRow::Turbo
             | QuickRow::Rewind
@@ -2838,6 +2840,7 @@ impl App {
             }
             QuickRow::Rumble => s.rumble = !s.rumble,
             QuickRow::LeftStick => s.left_stick_dpad = !s.left_stick_dpad,
+            QuickRow::AutoLoad => s.auto_load = !s.auto_load,
             QuickRow::EjectSave => s.eject_save = !s.eject_save,
             QuickRow::Turbo => s.turbo = !s.turbo,
             QuickRow::Rewind => s.rewind = !s.rewind,
