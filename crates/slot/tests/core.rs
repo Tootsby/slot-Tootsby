@@ -11,7 +11,7 @@ use slot::emu::{CoreState, EmuHandle};
 use slot::session::Session;
 use slot_input::{Btn, RawEvent};
 use slot_retro::{ButtonMask, LibretroCore, RetroCore};
-use slot_store::{Core, Platform};
+use slot_store::{ColourCorrection, Core, Platform};
 
 fn rom(name: &str) -> PathBuf {
     let p = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
@@ -32,7 +32,13 @@ fn the_vendored_core_is_preferred_over_the_mock() {
         return;
     };
     let d = common::tmp_root_with_real_carts(&[]);
-    let mut core = open_core_for(d.path(), Core::Mgba, "auto", false, &[dylib]);
+    let mut core = open_core_for(
+        d.path(),
+        Core::Mgba,
+        "auto",
+        ColourCorrection::Off,
+        &[dylib],
+    );
     assert!(
         is_mgba(core.as_mut(), &rom("preferred.gba")),
         "the mock ran with a vendored core sitting right there"
@@ -46,7 +52,7 @@ fn a_missing_core_falls_back_to_the_mock_rather_than_failing() {
         d.path(),
         Core::Mgba,
         "auto",
-        false,
+        ColourCorrection::Off,
         &[PathBuf::from("no/such/core.dylib")],
     );
     assert!(!is_mgba(core.as_mut(), &rom("missing.gba")));
@@ -60,7 +66,13 @@ fn a_rom_the_real_core_refuses_reports_failed() {
     };
     let d = common::tmp_root_with_carts(&["Broken"]);
     let emu = EmuHandle::spawn(
-        open_core_for(d.path(), Core::Mgba, "auto", false, &[dylib]),
+        open_core_for(
+            d.path(),
+            Core::Mgba,
+            "auto",
+            ColourCorrection::Off,
+            &[dylib],
+        ),
         d.path().join("Games/GBA/Broken.gba"),
         StubSink::new().ring(),
         None,
@@ -129,7 +141,7 @@ fn on_mgba_loading_a_state_while_the_game_writes_its_second_flash_bank_keeps_the
             Platform::Gba,
             "auto",
             false,
-            false,
+            ColourCorrection::Off,
             slot_store::Blending::Off,
             None,
         );
@@ -201,7 +213,7 @@ fn mgba_with(dylib: &Path, rom: &Path) -> LibretroCore {
         Platform::Gba,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );

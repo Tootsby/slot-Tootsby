@@ -208,9 +208,9 @@ pub struct SlotState {
     pub rumble: bool,
     pub ff_speed: u8,
     pub ff_sound: bool,
-    pub colour_correction_gba: bool,
-    pub colour_correction_gb: bool,
-    pub colour_correction_gbc: bool,
+    pub colour_correction_gba: ColourCorrection,
+    pub colour_correction_gb: ColourCorrection,
+    pub colour_correction_gbc: ColourCorrection,
     pub blending_gba: Blending,
     pub blending_gb: Blending,
     pub blending_gbc: Blending,
@@ -287,6 +287,44 @@ impl SlotState {
             stem: stem.to_string(),
         });
         true
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum ColourCorrection {
+    #[default]
+    Off,
+    Light,
+    On,
+}
+
+impl ColourCorrection {
+    pub const ALL: [ColourCorrection; 3] = [
+        ColourCorrection::Off,
+        ColourCorrection::Light,
+        ColourCorrection::On,
+    ];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            ColourCorrection::Off => "0",
+            ColourCorrection::Light => "light",
+            ColourCorrection::On => "1",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<ColourCorrection> {
+        Self::ALL.into_iter().find(|c| c.key() == value)
+    }
+
+    pub fn step(self, right: bool) -> ColourCorrection {
+        let n = Self::ALL.len();
+        let at = Self::ALL.iter().position(|&c| c == self).unwrap_or(0);
+        Self::ALL[if right {
+            (at + 1) % n
+        } else {
+            (at + n - 1) % n
+        }]
     }
 }
 
@@ -403,9 +441,9 @@ impl Default for SlotState {
             rumble: true,
             ff_speed: FF_SPEED_DEFAULT,
             ff_sound: false,
-            colour_correction_gba: false,
-            colour_correction_gb: false,
-            colour_correction_gbc: false,
+            colour_correction_gba: ColourCorrection::Off,
+            colour_correction_gb: ColourCorrection::Off,
+            colour_correction_gbc: ColourCorrection::Off,
             blending_gba: Blending::Off,
             blending_gb: Blending::Off,
             blending_gbc: Blending::Off,
@@ -498,8 +536,8 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
         s.rumble as u8,
         s.ff_speed,
         s.ff_sound as u8,
-        s.colour_correction_gba as u8,
-        s.colour_correction_gb as u8,
+        s.colour_correction_gba.key(),
+        s.colour_correction_gb.key(),
         s.shader_gba.name(),
         s.shader_gb.name(),
         s.eject_save as u8,
@@ -512,7 +550,7 @@ pub fn write_slot_state(root: &Path, s: &SlotState) -> std::io::Result<()> {
     );
     text.push_str(&format!(
         "colour_correction_gbc={}\n",
-        s.colour_correction_gbc as u8
+        s.colour_correction_gbc.key()
     ));
     text.push_str(&format!("extra_dim={}\n", s.extra_dim as u8));
     text.push_str(&format!("blending_gba={}\n", s.blending_gba.name()));
@@ -606,10 +644,10 @@ fn parse(text: &str) -> Option<SlotState> {
             "rumble" => rumble = flag(value),
             "ff_speed" => ff_speed = ff_speed_value(value),
             "ff_sound" => ff_sound = flag(value),
-            "colour_correction" => colour_correction = flag(value),
-            "colour_correction_gba" => colour_correction_gba = flag(value),
-            "colour_correction_gb" => colour_correction_gb = flag(value),
-            "colour_correction_gbc" => colour_correction_gbc = flag(value),
+            "colour_correction" => colour_correction = ColourCorrection::parse(value),
+            "colour_correction_gba" => colour_correction_gba = ColourCorrection::parse(value),
+            "colour_correction_gb" => colour_correction_gb = ColourCorrection::parse(value),
+            "colour_correction_gbc" => colour_correction_gbc = ColourCorrection::parse(value),
             "blending_gba" => blending_gba = Blending::parse(value),
             "blending_gb" => blending_gb = Blending::parse(value),
             "blending_gbc" => blending_gbc = Blending::parse(value),

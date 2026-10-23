@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.1-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.1-tootsby.2): fork
+
+- **Color Correction: Light.** Each platform's Color Correction row, and `SELECT + Y` in game, now step Off, Light and On. Light is halfway between the raw picture and the full GBA/GBC correction. It works the same on mGBA and gpSP, on every device, and shows in save state thumbnails.
+- Light's colour tables are built when slot is compiled, so switching to it mid-game doesn't stall a frame.
+- Existing settings carry over: Color Correction set to Off or On stays where it was.
+
 ## [1.8.1-tootsby.1](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.1-tootsby.1): fork
 
 Synced with upstream 1.8.1 (notes below), and trimmed the fork back to changes that work the same on every device:

@@ -3,8 +3,8 @@ mod common;
 use common::tmp_root;
 use slot_store::{
     atomic_write, read_slot_state, sweep_temps, write_slot_state, Appearance, BezelPick, Blending,
-    GbPalette, Platform, Recent, Shader, SlotState, WallpaperPick, WallpaperTint, FF_SPEEDS,
-    FF_SPEED_DEFAULT,
+    ColourCorrection, GbPalette, Platform, Recent, Shader, SlotState, WallpaperPick, WallpaperTint,
+    FF_SPEEDS, FF_SPEED_DEFAULT,
 };
 use tempfile::tempdir;
 
@@ -192,12 +192,14 @@ fn a_first_boot_rumbles_and_fast_forwards_silently_at_the_default() {
     assert!(s.rumble, "boots with the motor off");
     assert_eq!(s.ff_speed, FF_SPEED_DEFAULT);
     assert!(!s.ff_sound, "boots with fast forward audible");
-    assert!(
-        !s.colour_correction_gba,
+    assert_eq!(
+        s.colour_correction_gba,
+        ColourCorrection::Off,
         "boots with the GBA picture tinted"
     );
-    assert!(
-        !s.colour_correction_gb,
+    assert_eq!(
+        s.colour_correction_gb,
+        ColourCorrection::Off,
         "boots with the Game Boy picture tinted"
     );
     assert_eq!(s.shader_gba, Shader::Grid);
@@ -229,9 +231,9 @@ fn a_card_from_before_the_settings_keeps_all_its_values() {
             rumble: true,
             ff_speed: FF_SPEED_DEFAULT,
             ff_sound: false,
-            colour_correction_gba: false,
-            colour_correction_gb: false,
-            colour_correction_gbc: false,
+            colour_correction_gba: ColourCorrection::Off,
+            colour_correction_gb: ColourCorrection::Off,
+            colour_correction_gbc: ColourCorrection::Off,
             blending_gba: Blending::Off,
             blending_gb: Blending::Off,
             blending_gbc: Blending::Off,
@@ -270,8 +272,8 @@ fn the_quick_menu_settings_round_trip_as_their_own_lines() {
         rumble: false,
         ff_speed: 2,
         ff_sound: true,
-        colour_correction_gba: true,
-        colour_correction_gb: false,
+        colour_correction_gba: ColourCorrection::On,
+        colour_correction_gb: ColourCorrection::Off,
         blending_gba: Blending::Mix,
         blending_gb: Blending::Ghosting,
         blending_gbc: Blending::Mix,
@@ -284,7 +286,7 @@ fn the_quick_menu_settings_round_trip_as_their_own_lines() {
         gb_palettes: true,
         gb_palette: GbPalette::parse("GBC Dark Green →A").unwrap(),
         wallpaper_tint: WallpaperTint::Medium,
-        colour_correction_gbc: true,
+        colour_correction_gbc: ColourCorrection::Light,
         shader_gbc: Shader::Grid,
         bezel_gba: BezelPick::None,
         bezel_gb: BezelPick::Default,
@@ -321,7 +323,7 @@ fn the_quick_menu_settings_round_trip_as_their_own_lines() {
         "bezel_gba=none",
         "bezel_gb=default",
         "bezel_gbc=Pocket.png",
-        "colour_correction_gbc=1",
+        "colour_correction_gbc=light",
         "shader_gbc=grid",
         "shelf=gba",
         "shelf_cart=gba/Drill Dozer",
@@ -409,7 +411,13 @@ fn an_out_of_range_setting_falls_back_to_its_default() {
                 s.colour_correction_gba,
                 s.colour_correction_gb
             ),
-            (true, FF_SPEED_DEFAULT, false, false, false),
+            (
+                true,
+                FF_SPEED_DEFAULT,
+                false,
+                ColourCorrection::Off,
+                ColourCorrection::Off
+            ),
             "accepted {bad:?}"
         );
         assert_eq!(
@@ -521,8 +529,9 @@ fn a_card_with_one_colour_correction_setting_starts_both_systems_from_it() {
     let d = tmp_root();
     let known = "cart=Emerald\nbrightness=3\nblue_light=1\nvolume=40\nmuted=0\nclock_set=1\nutc_offset_min=0\n";
     for (old, want) in [
-        ("colour_correction=1\n", true),
-        ("colour_correction=0\n", false),
+        ("colour_correction=1\n", ColourCorrection::On),
+        ("colour_correction=light\n", ColourCorrection::Light),
+        ("colour_correction=0\n", ColourCorrection::Off),
     ] {
         std::fs::write(d.path().join("Config/slot.state"), format!("{known}{old}")).unwrap();
         let s = read_slot_state(d.path());
@@ -540,7 +549,7 @@ fn a_card_with_one_colour_correction_setting_starts_both_systems_from_it() {
     let s = read_slot_state(d.path());
     assert_eq!(
         (s.colour_correction_gba, s.colour_correction_gb),
-        (true, false),
+        (ColourCorrection::On, ColourCorrection::Off),
         "the old line overrode a system's own setting"
     );
 }
@@ -574,17 +583,23 @@ fn a_card_from_before_the_gbc_split_starts_gbc_from_the_gb_c_settings() {
     )
     .unwrap();
     let s = read_slot_state(d.path());
-    assert_eq!((s.colour_correction_gb, s.shader_gb), (true, Shader::Grid));
+    assert_eq!(
+        (s.colour_correction_gb, s.shader_gb),
+        (ColourCorrection::On, Shader::Grid)
+    );
     assert_eq!(
         (s.colour_correction_gbc, s.shader_gbc),
-        (true, Shader::Grid)
+        (ColourCorrection::On, Shader::Grid)
     );
     std::fs::write(
         d.path().join("Config/slot.state"),
         format!("{known}colour_correction=1\n"),
     )
     .unwrap();
-    assert!(read_slot_state(d.path()).colour_correction_gbc);
+    assert_eq!(
+        read_slot_state(d.path()).colour_correction_gbc,
+        ColourCorrection::On
+    );
     std::fs::write(
         d.path().join("Config/slot.state"),
         format!("{known}colour_correction_gb=1\nshader_gb=grid\ncolour_correction_gbc=0\nshader_gbc=off\n"),
@@ -593,7 +608,7 @@ fn a_card_from_before_the_gbc_split_starts_gbc_from_the_gb_c_settings() {
     let s = read_slot_state(d.path());
     assert_eq!(
         (s.colour_correction_gbc, s.shader_gbc),
-        (false, Shader::Off),
+        (ColourCorrection::Off, Shader::Off),
         "the GB settings overrode GBC's own"
     );
 }

@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use libloading::Library;
 
-use crate::core::{AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
+use crate::core::{AvInfo, ButtonMask, CoreError, LightColour, RetroCore, GBA_H, GBA_W};
 use crate::ffi::*;
 use crate::link::Link;
 use crate::rumble::Rumble;
@@ -25,6 +25,8 @@ enum PixelFormat {
 struct Host {
     video: Vec<u8>,
     format: PixelFormat,
+    light_colour: Option<LightColour>,
+    light_lut: Option<&'static [u32; 65536]>,
     audio: Vec<i16>,
     inputs: [u16; 2],
     system_dir: CString,
@@ -333,18 +335,29 @@ unsafe extern "C" fn video_refresh(
                     ptr::copy_nonoverlapping(src, h.video.as_mut_ptr().add(row), cols * 4);
                 }
                 PixelFormat::Rgb565 => {
-                    for x in 0..cols {
-                        let p = ptr::read_unaligned((src as *const u16).add(x));
-                        let r = u32::from((p >> 11) & 0x1f);
-                        let g = u32::from((p >> 5) & 0x3f);
-                        let b = u32::from(p & 0x1f);
-                        let px = ((b << 3) | (b >> 2))
-                            | (((g << 2) | (g >> 4)) << 8)
-                            | (((r << 3) | (r >> 2)) << 16);
-                        ptr::write_unaligned(
-                            h.video.as_mut_ptr().add(row + x * 4) as *mut u32,
-                            px.to_le(),
-                        );
+                    if let Some(lut) = h.light_lut {
+                        for x in 0..cols {
+                            let p = ptr::read_unaligned((src as *const u16).add(x));
+                            let px = lut[usize::from(p)];
+                            ptr::write_unaligned(
+                                h.video.as_mut_ptr().add(row + x * 4) as *mut u32,
+                                px.to_le(),
+                            );
+                        }
+                    } else {
+                        for x in 0..cols {
+                            let p = ptr::read_unaligned((src as *const u16).add(x));
+                            let r = u32::from((p >> 11) & 0x1f);
+                            let g = u32::from((p >> 5) & 0x3f);
+                            let b = u32::from(p & 0x1f);
+                            let px = ((b << 3) | (b >> 2))
+                                | (((g << 2) | (g >> 4)) << 8)
+                                | (((r << 3) | (r >> 2)) << 16);
+                            ptr::write_unaligned(
+                                h.video.as_mut_ptr().add(row + x * 4) as *mut u32,
+                                px.to_le(),
+                            );
+                        }
                     }
                 }
             }
@@ -465,6 +478,15 @@ impl LibretroCore {
             .map(|s| s.to_string())
     }
 
+    pub fn set_light_colour(&mut self, light: Option<LightColour>) {
+        self.host.light_colour = light;
+        self.host.light_lut = light.map(LightColour::lut);
+    }
+
+    pub fn light_colour(&self) -> Option<LightColour> {
+        self.host.light_colour
+    }
+
     fn open_inner(dylib: &Path, system_dir: &Path, save_dir: &Path) -> Result<Self, CoreError> {
         let lib = unsafe { Library::new(dylib) }.map_err(|e| CoreError::Load(e.to_string()))?;
         let api = unsafe { Api::load(&lib) }?;
@@ -475,6 +497,8 @@ impl LibretroCore {
         let mut host = Box::new(Host {
             video: vec![0; VIDEO_BYTES],
             format: PixelFormat::Xrgb8888,
+            light_colour: None,
+            light_lut: None,
             audio: Vec::new(),
             inputs: [0; 2],
             system_dir: cdir(system_dir)?,
@@ -565,6 +589,10 @@ impl Drop for LibretroCore {
 impl RetroCore for LibretroCore {
     fn set_option(&mut self, key: &str, value: &str) {
         LibretroCore::set_option(self, key, value);
+    }
+
+    fn set_light_colour(&mut self, light: Option<LightColour>) {
+        LibretroCore::set_light_colour(self, light);
     }
 
     fn load(&mut self, rom: &Path) -> Result<(), CoreError> {
@@ -742,6 +770,8 @@ mod tests {
             options,
             options_dirty,
             declared: HashMap::new(),
+            light_colour: None,
+            light_lut: None,
         })
     }
 
@@ -1732,5 +1762,23 @@ mod tests {
             &[100u8, 50, 100 ^ 50],
             "the picture was blanked or moved where a duplicate should have kept it"
         );
+    }
+
+    #[test]
+    fn light_colour_correction_lut_sits_halfway_between_raw_rgb565_and_full_correction() {
+        let gba_lut = LightColour::Gba.lut();
+        // Pure red in RGB565: r5 = 31, g6 = 0, b5 = 0 -> 0xF800
+        let pure_red_px = gba_lut[0xF800];
+        let b = (pure_red_px & 0xFF) as u8;
+        let g = ((pure_red_px >> 8) & 0xFF) as u8;
+        let r = ((pure_red_px >> 16) & 0xFF) as u8;
+        // Raw RGB565 pure red is (255, 0, 0). Full GBA correction desaturates red (< 255) and mixes into G/B (> 0).
+        // The 50% midpoint must therefore have R strictly between full-CC and 255, and G/B > 0.
+        assert!(
+            r > 200 && r < 255,
+            "expected light red R in (200, 255), got {r}"
+        );
+        assert!(g > 0 && g < 100, "expected light red G > 0, got {g}");
+        assert!(b > 0 && b < 100, "expected light red B > 0, got {b}");
     }
 }

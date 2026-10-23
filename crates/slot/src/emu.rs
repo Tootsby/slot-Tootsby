@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use crate::cable::{self, Cable};
 use slot_retro::{
-    ButtonMask, Link, LinkChannel, RetroCore, Rumble, GBA_H, GBA_W, NETPACKET_RELIABLE,
+    ButtonMask, LightColour, Link, LinkChannel, RetroCore, Rumble, GBA_H, GBA_W, NETPACKET_RELIABLE,
 };
 
 use crate::audio::Ring;
@@ -80,6 +80,7 @@ enum Cmd {
     EndLink,
     BeginCable(u8, Box<dyn LinkChannel>),
     SetOption(String, String),
+    SetLightColour(Option<LightColour>),
     Refresh,
 }
 
@@ -258,6 +259,10 @@ impl EmuHandle {
             &self.shared,
             Cmd::SetOption(key.to_owned(), value.to_owned()),
         );
+    }
+
+    pub fn set_light_colour(&self, light: Option<LightColour>) {
+        request(&self.cmds, &self.shared, Cmd::SetLightColour(light));
     }
 
     pub fn set_driven(&self, driven: bool) {
@@ -946,6 +951,9 @@ impl Worker {
             }
             Cmd::SetOption(key, value) => {
                 core.set_option(&key, &value);
+            }
+            Cmd::SetLightColour(light) => {
+                core.set_light_colour(light);
             }
             Cmd::EndLink => {
                 self.shared.link_lost.store(false, Ordering::Relaxed);

@@ -301,14 +301,17 @@ impl Session {
                 recoloured = true;
             }
         }
-        if let Some(on) = self.app.take_colour_correction() {
-            if let Some((key, value)) =
-                crate::core::colour_option(self.app.core(), self.app.playing_platform(), on)
-            {
-                if let Some(emu) = &self.emu {
+        if let Some(colour) = self.app.take_colour_correction() {
+            let platform = self.app.playing_platform();
+            let light = crate::core::light_colour_for(platform, colour);
+            if let Some(emu) = &self.emu {
+                emu.set_light_colour(light);
+                if let Some((key, value)) =
+                    crate::core::colour_option(self.app.core(), platform, colour)
+                {
                     emu.set_option(key, value);
-                    recoloured = true;
                 }
+                recoloured = true;
             }
         }
         if let Some(blending) = self.app.take_blending() {

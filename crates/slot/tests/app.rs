@@ -2096,12 +2096,12 @@ fn the_colour_shortcut_reaches_the_core_already_running() {
 
     assert_eq!(
         s.app().colour_correction(),
-        !before,
-        "the shortcut did not flip the setting"
+        before.step(true),
+        "the shortcut did not step the setting"
     );
     assert_eq!(
         s.app_mut().take_colour_correction(),
-        Some(!before),
+        Some(before.step(true)),
         "the change was written down but never queued for the core already running, which is \
          the whole of what this shortcut is for"
     );
@@ -2109,6 +2109,7 @@ fn the_colour_shortcut_reaches_the_core_already_running() {
 
 #[test]
 fn the_colour_shortcut_flips_only_the_system_that_is_playing() {
+    use slot_store::ColourCorrection;
     let d = common::tmp_root_with_gb_carts(&["Tetris", "Zelda"]);
     let (mut s, _motor) = common::session_with_platform(d.path());
     s.app_mut().apply(slot_input::Action::Insert);
@@ -2117,14 +2118,14 @@ fn the_colour_shortcut_flips_only_the_system_that_is_playing() {
     let saved = slot_store::read_slot_state(d.path());
     assert_eq!(
         (saved.colour_correction_gba, saved.colour_correction_gb),
-        (false, true),
+        (ColourCorrection::Off, ColourCorrection::Light),
         "a Game Boy game's shortcut did not land on the Game Boy setting alone"
     );
 }
 
 #[test]
 fn a_game_boy_color_game_keeps_its_own_colour_and_shader() {
-    use slot_store::Shader;
+    use slot_store::{ColourCorrection, Shader};
     let d = common::tmp_root_with_gbc_carts(&["Crystal", "Oracle"]);
     let (mut s, _motor) = common::session_with_platform(d.path());
     s.app_mut().apply(slot_input::Action::Insert);
@@ -2138,7 +2139,11 @@ fn a_game_boy_color_game_keeps_its_own_colour_and_shader() {
             saved.colour_correction_gb,
             saved.colour_correction_gbc
         ),
-        (false, false, true),
+        (
+            ColourCorrection::Off,
+            ColourCorrection::Off,
+            ColourCorrection::Light
+        ),
         "a Game Boy Color game's colour shortcut did not land on GBC alone"
     );
     assert_eq!(
@@ -2151,14 +2156,16 @@ fn a_game_boy_color_game_keeps_its_own_colour_and_shader() {
 
 #[test]
 fn the_colour_shortcut_names_the_state_it_arrived_at() {
+    use slot_store::ColourCorrection;
     let d = common::tmp_root_with_carts(&["Emerald", "Fusion"]);
     let (mut s, _motor) = common::session_with_platform(d.path());
     s.app_mut().apply(slot_input::Action::Insert);
 
-    for _ in 0..2 {
-        let want = match s.app().colour_correction() {
-            true => slot_ui::Toast::ColourOff,
-            false => slot_ui::Toast::ColourOn,
+    for _ in 0..3 {
+        let want = match s.app().colour_correction().step(true) {
+            ColourCorrection::Off => slot_ui::Toast::ColourOff,
+            ColourCorrection::Light => slot_ui::Toast::ColourLight,
+            ColourCorrection::On => slot_ui::Toast::ColourOn,
         };
         s.app_mut()
             .apply(slot_input::Action::ColourCorrectionToggle);

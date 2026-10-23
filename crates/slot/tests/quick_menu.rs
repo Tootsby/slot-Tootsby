@@ -297,6 +297,7 @@ fn rumble_and_fast_forward_sound_flip_on_either_arrow_and_save() {
 
 #[test]
 fn each_systems_colour_correction_flips_on_either_arrow_and_saves_alone() {
+    use slot_store::ColourCorrection;
     let saved = |d: &TempDir| {
         let s = read_slot_state(d.path());
         (
@@ -317,20 +318,26 @@ fn each_systems_colour_correction_flips_on_either_arrow_and_saves_alone() {
             Some(QuickValue::Off),
             "{row:?} did not open on the default, which is off"
         );
-        for (btn, want) in [
-            (Btn::Right, true),
-            (Btn::Left, false),
-            (Btn::Left, true),
-            (Btn::Right, false),
+        for (btn, want, shown) in [
+            (Btn::Right, ColourCorrection::Light, QuickValue::Light),
+            (Btn::Right, ColourCorrection::On, QuickValue::On),
+            (Btn::Right, ColourCorrection::Off, QuickValue::Off),
+            (Btn::Left, ColourCorrection::On, QuickValue::On),
+            (Btn::Left, ColourCorrection::Light, QuickValue::Light),
+            (Btn::Left, ColourCorrection::Off, QuickValue::Off),
         ] {
             press(&mut a, btn);
             let both = match row {
-                QuickRow::GbaColourCorrection => (want, false, false),
-                QuickRow::GbColourCorrection => (false, want, false),
-                _ => (false, false, want),
+                QuickRow::GbaColourCorrection => {
+                    (want, ColourCorrection::Off, ColourCorrection::Off)
+                }
+                QuickRow::GbColourCorrection => {
+                    (ColourCorrection::Off, want, ColourCorrection::Off)
+                }
+                _ => (ColourCorrection::Off, ColourCorrection::Off, want),
             };
             assert_eq!(saved(&d), both, "{row:?} {btn:?}");
-            assert_eq!(a.quick_value(row), Some(QuickValue::flag(want)));
+            assert_eq!(a.quick_value(row), Some(shown));
         }
     }
 }
@@ -462,12 +469,21 @@ fn each_platform_keeps_its_own_shader_wraps_and_starts_on_grid_and_simpletex() {
 
 #[test]
 fn colour_correction_leaves_the_settings_around_it_alone() {
+    use slot_store::ColourCorrection;
     let (d, mut a, _) = on_carousel();
     open_at(&mut a, QuickRow::GbaColourCorrection);
     press(&mut a, Btn::Right);
     let s = read_slot_state(d.path());
-    assert!(s.colour_correction_gba, "the row never took");
-    assert!(!s.colour_correction_gb, "the Game Boy picture changed too");
+    assert_eq!(
+        s.colour_correction_gba,
+        ColourCorrection::Light,
+        "the row never took"
+    );
+    assert_eq!(
+        s.colour_correction_gb,
+        ColourCorrection::Off,
+        "the Game Boy picture changed too"
+    );
     assert_eq!(
         (s.ff_speed, s.ff_sound, s.rumble),
         (

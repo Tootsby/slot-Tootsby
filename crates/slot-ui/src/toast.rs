@@ -17,6 +17,7 @@ pub enum Toast {
     PeerEnded,
     BiosMismatch,
     ColourOn,
+    ColourLight,
     ColourOff,
     ShaderOff,
     ShaderLcd3x,
@@ -34,7 +35,7 @@ pub enum Toast {
 }
 
 impl Toast {
-    const FIXED: [Toast; 21] = [
+    const FIXED: [Toast; 22] = [
         Toast::StateSaved,
         Toast::StateLoaded,
         Toast::ScreenshotSaved,
@@ -44,6 +45,7 @@ impl Toast {
         Toast::PeerEnded,
         Toast::BiosMismatch,
         Toast::ColourOn,
+        Toast::ColourLight,
         Toast::ColourOff,
         Toast::ShaderOff,
         Toast::ShaderLcd3x,
@@ -130,6 +132,7 @@ impl Toast {
             Toast::PeerEnded => "Link was ended",
             Toast::BiosMismatch => "BIOS does not match",
             Toast::ColourOn => "Correction On",
+            Toast::ColourLight => "Correction Light",
             Toast::ColourOff => "Correction Off",
             Toast::ShaderOff => "Shader: Off",
             Toast::ShaderLcd3x => "Shader: LCD3x",

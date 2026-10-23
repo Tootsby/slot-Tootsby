@@ -118,8 +118,8 @@ fn colour_correction_toggles_the_running_platform_and_asks_the_core() {
     let before = a.colour_correction();
     go_to(&mut a, QuickRow::ColourCorrection);
     press(&mut a, Btn::Right);
-    assert_eq!(a.colour_correction(), !before);
-    assert_eq!(a.take_colour_correction(), Some(!before));
+    assert_eq!(a.colour_correction(), before.step(true));
+    assert_eq!(a.take_colour_correction(), Some(before.step(true)));
 }
 
 #[test]

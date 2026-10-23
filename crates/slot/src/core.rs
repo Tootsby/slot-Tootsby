@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use slot_retro::{LibretroCore, MockCore, RetroCore};
-use slot_store::{Blending, Core, GbColors, Platform};
+use slot_retro::{LibretroCore, LightColour, MockCore, RetroCore};
+use slot_store::{Blending, ColourCorrection, Core, GbColors, Platform};
 
 use crate::root;
 
@@ -43,7 +43,7 @@ pub fn open_core(
     core: Core,
     platform: Platform,
     serial: &str,
-    colour: bool,
+    colour: ColourCorrection,
     blending: Blending,
     palette: Option<GbColors>,
     link: Option<u8>,
@@ -67,7 +67,7 @@ pub fn open_core_for(
     root: &Path,
     core: Core,
     serial: &str,
-    colour: bool,
+    colour: ColourCorrection,
     paths: &[PathBuf],
 ) -> Box<dyn RetroCore> {
     open_core_for_palette(root, core, Platform::Gba, serial, colour, None, paths)
@@ -78,7 +78,7 @@ pub fn open_core_for_palette(
     core: Core,
     platform: Platform,
     serial: &str,
-    colour: bool,
+    colour: ColourCorrection,
     palette: Option<GbColors>,
     paths: &[PathBuf],
 ) -> Box<dyn RetroCore> {
@@ -105,7 +105,7 @@ fn open_named(
     core: Core,
     platform: Platform,
     serial: &str,
-    colour: bool,
+    colour: ColourCorrection,
     blending: Blending,
     palette: Option<GbColors>,
     link: Option<u8>,
@@ -173,8 +173,9 @@ fn report_missing(core: Core, paths: &[PathBuf]) {
 pub fn colour_option(
     which: Core,
     platform: Platform,
-    on: bool,
+    colour: ColourCorrection,
 ) -> Option<(&'static str, &'static str)> {
+    let on = colour == ColourCorrection::On;
     match which {
         Core::Mgba => Some((
             "mgba_color_correction",
@@ -190,6 +191,16 @@ pub fn colour_option(
             "gpsp_color_correction",
             if on { "enabled" } else { "disabled" },
         )),
+    }
+}
+
+pub fn light_colour_for(platform: Platform, colour: ColourCorrection) -> Option<LightColour> {
+    if colour != ColourCorrection::Light {
+        return None;
+    }
+    match platform {
+        Platform::Gba => Some(LightColour::Gba),
+        Platform::Gb | Platform::Gbc => Some(LightColour::Gbc),
     }
 }
 
@@ -229,13 +240,14 @@ pub fn apply_core_options(
     platform: Platform,
     serial: &str,
     bios: bool,
-    colour: bool,
+    colour: ColourCorrection,
     blending: Blending,
     palette: Option<GbColors>,
 ) {
     core.set_option(&format!("{}_frameskip", which.as_str()), "auto");
     let (key, value) = blend_option(which, blending);
     core.set_option(key, value);
+    core.set_light_colour(light_colour_for(platform, colour));
     if which == Core::Mgba {
         core.set_option("mgba_sgb_borders", "OFF");
         core.set_option("mgba_force_gbp", "ON");
@@ -277,19 +289,27 @@ mod tests {
     #[test]
     fn each_core_spells_colour_correction_its_own_way() {
         assert_eq!(
-            colour_option(Core::Mgba, Platform::Gba, true),
+            colour_option(Core::Mgba, Platform::Gba, ColourCorrection::On),
             Some(("mgba_color_correction", "Auto"))
         );
         assert_eq!(
-            colour_option(Core::Mgba, Platform::Gba, false),
+            colour_option(Core::Mgba, Platform::Gba, ColourCorrection::Light),
             Some(("mgba_color_correction", "OFF"))
         );
         assert_eq!(
-            colour_option(Core::Gpsp, Platform::Gba, true),
+            colour_option(Core::Mgba, Platform::Gba, ColourCorrection::Off),
+            Some(("mgba_color_correction", "OFF"))
+        );
+        assert_eq!(
+            colour_option(Core::Gpsp, Platform::Gba, ColourCorrection::On),
             Some(("gpsp_color_correction", "enabled"))
         );
         assert_eq!(
-            colour_option(Core::Gpsp, Platform::Gba, false),
+            colour_option(Core::Gpsp, Platform::Gba, ColourCorrection::Light),
+            Some(("gpsp_color_correction", "disabled"))
+        );
+        assert_eq!(
+            colour_option(Core::Gpsp, Platform::Gba, ColourCorrection::Off),
             Some(("gpsp_color_correction", "disabled"))
         );
     }
@@ -325,7 +345,7 @@ mod tests {
     #[test]
     fn mgba_uses_gbc_correction_for_game_boy_games() {
         assert_eq!(
-            colour_option(Core::Mgba, Platform::Gb, true),
+            colour_option(Core::Mgba, Platform::Gb, ColourCorrection::On),
             Some(("mgba_color_correction", "GBC"))
         );
     }

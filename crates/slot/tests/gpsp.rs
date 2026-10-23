@@ -1,6 +1,6 @@
 mod common;
 
-use slot_store::{Core, Platform};
+use slot_store::{ColourCorrection, Core, Platform};
 
 fn dylib_for(core: Core) -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -51,7 +51,7 @@ fn gpsp_is_told_its_serial_mode_before_load() {
         Platform::Gba,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -78,7 +78,7 @@ fn gpsp_is_told_the_serial_mode_it_is_handed() {
             Platform::Gba,
             serial,
             false,
-            false,
+            ColourCorrection::Off,
             slot_store::Blending::Off,
             None,
         );
@@ -105,7 +105,7 @@ fn gpsp_boots_through_the_bios_when_the_card_carries_one() {
         Platform::Gba,
         "auto",
         true,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -142,7 +142,7 @@ fn gpsp_is_left_on_its_own_boot_default_when_the_card_has_no_bios() {
         Platform::Gba,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -169,7 +169,7 @@ fn mgba_is_given_its_own_frameskip_and_none_of_gpsps() {
         Platform::Gba,
         "rfu",
         true,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -208,7 +208,11 @@ fn both_cores_are_told_about_colour_correction_in_their_own_words() {
         }
         let _g = common::core_lock();
         let mut core = slot_retro::LibretroCore::open(&path).expect("open the core");
-        for (colour, want) in [(true, on), (false, off)] {
+        for (colour, want) in [
+            (ColourCorrection::On, on),
+            (ColourCorrection::Light, off),
+            (ColourCorrection::Off, off),
+        ] {
             slot::core::apply_core_options(
                 &mut core,
                 which,
@@ -222,7 +226,7 @@ fn both_cores_are_told_about_colour_correction_in_their_own_words() {
             assert_eq!(
                 core.option(key).as_deref(),
                 Some(want),
-                "{} was not told {want} for colour correction {colour}",
+                "{} was not told {want} for colour correction {colour:?}",
                 which.as_str()
             );
         }
@@ -254,7 +258,7 @@ fn gpsp_is_put_on_auto_frameskip() {
         Platform::Gba,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -281,8 +285,13 @@ fn root_with_bios_and_logo_cart() -> Option<(tempfile::TempDir, std::path::PathB
 
 fn splash_plays(root: &std::path::Path, rom: &std::path::Path) -> bool {
     use slot_retro::ButtonMask;
-    let mut core =
-        slot::core::open_core_for(root, Core::Gpsp, "auto", false, &[dylib_for(Core::Gpsp)]);
+    let mut core = slot::core::open_core_for(
+        root,
+        Core::Gpsp,
+        "auto",
+        ColourCorrection::Off,
+        &[dylib_for(Core::Gpsp)],
+    );
     core.load(rom).expect("gpSP refused the logo rom");
     (0..150).any(|_| {
         core.run_frame(ButtonMask::default());
@@ -343,7 +352,13 @@ fn a_published_frame_is_the_splash(
     });
 
     let emu = EmuHandle::spawn(
-        slot::core::open_core_for(root, Core::Gpsp, "auto", false, &[dylib_for(Core::Gpsp)]),
+        slot::core::open_core_for(
+            root,
+            Core::Gpsp,
+            "auto",
+            ColourCorrection::Off,
+            &[dylib_for(Core::Gpsp)],
+        ),
         rom.to_path_buf(),
         sink.ring(),
         None,
@@ -385,7 +400,7 @@ fn the_splash_plays_on_a_fresh_start_and_never_over_a_resume() {
             d.path(),
             Core::Gpsp,
             "auto",
-            false,
+            ColourCorrection::Off,
             &[dylib_for(Core::Gpsp)],
         );
         core.load(&rom).expect("gpSP refused the logo rom");
@@ -671,7 +686,7 @@ fn open_core_reaches_a_gpsp_named_dylib_under_the_content_roots_system_directory
         Core::Gpsp,
         Platform::Gba,
         "auto",
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
         None,
@@ -786,7 +801,7 @@ fn keeps_time_while_off(which: Core) {
             Platform::Gba,
             "auto",
             false,
-            false,
+            ColourCorrection::Off,
             slot_store::Blending::Off,
             None,
         );
@@ -860,7 +875,7 @@ fn a_paused_refresh_shows_a_colour_change_on_the_first_toggle() {
             d.path(),
             Core::Gpsp,
             "auto",
-            false,
+            ColourCorrection::Off,
             &[dylib_for(Core::Gpsp)],
         ),
         rom,

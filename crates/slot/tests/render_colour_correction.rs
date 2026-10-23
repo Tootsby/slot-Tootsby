@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use common::{core_lock, repo_root, vendored_core};
 use slot_retro::{ButtonMask, GBA_H, GBA_W};
-use slot_store::{Core, GbPalette, Platform};
+use slot_store::{ColourCorrection, Core, GbPalette, Platform};
 
 fn frames_for(name: &str) -> usize {
     match name {
@@ -99,7 +99,7 @@ fn picture(
     rom: &Path,
     platform: Platform,
     palette: Option<GbPalette>,
-    colour: bool,
+    colour: ColourCorrection,
     frames: usize,
 ) -> Vec<u8> {
     let mut core = slot::core::open_core_for_palette(
@@ -140,7 +140,11 @@ fn the_cards_setting_reaches_the_core_through_the_session() {
     let _g = core_lock();
 
     let mut sat = Vec::new();
-    for colour in [false, true] {
+    for colour in [
+        ColourCorrection::Off,
+        ColourCorrection::Light,
+        ColourCorrection::On,
+    ] {
         let d = common::tmp_root_with_carts(&[]);
         let Some(_) = card_cart(
             d.path(),
@@ -184,23 +188,27 @@ fn the_cards_setting_reaches_the_core_through_the_session() {
             s.update(1.0 / 60.0);
             std::thread::sleep(Duration::from_millis(1));
         };
-        write_png(
-            if colour { "session-on" } else { "session-off" },
-            GBA_W,
-            GBA_H,
-            &picture,
-        );
+        let label = match colour {
+            ColourCorrection::Off => "session-off",
+            ColourCorrection::Light => "session-light",
+            ColourCorrection::On => "session-on",
+        };
+        write_png(label, GBA_W, GBA_H, &picture);
         println!(
-            "session colour={colour}: mean {:.1?} sat {:.1}",
+            "session colour={colour:?}: mean {:.1?} sat {:.1}",
             mean_rgb(&picture),
             mean_saturation(&picture)
         );
         sat.push(mean_saturation(&picture));
         drop(s);
     }
-    let [off, on] = sat[..] else {
-        unreachable!("two runs");
+    let [off, light, on] = sat[..] else {
+        unreachable!("three runs");
     };
+    assert!(
+        light < off && on < light,
+        "light colour correction did not sit between off ({off:.1}) and on ({on:.1}): got {light:.1}"
+    );
     assert!(
         on < off * 0.9,
         "the card's colour correction never reached the core: saturation {off:.1} with it off \
@@ -245,22 +253,52 @@ fn colour_correction_changes_the_picture_on_every_platform() {
             continue;
         };
         let frames = frames_for(name);
-        let off = picture(d.path(), &dylib, &rom, platform, palette, false, frames);
-        let on = picture(d.path(), &dylib, &rom, platform, palette, true, frames);
+        let off = picture(
+            d.path(),
+            &dylib,
+            &rom,
+            platform,
+            palette,
+            ColourCorrection::Off,
+            frames,
+        );
+        let light = picture(
+            d.path(),
+            &dylib,
+            &rom,
+            platform,
+            palette,
+            ColourCorrection::Light,
+            frames,
+        );
+        let on = picture(
+            d.path(),
+            &dylib,
+            &rom,
+            platform,
+            palette,
+            ColourCorrection::On,
+            frames,
+        );
         assert!(
             mean_rgb(&off).iter().sum::<f64>() > 12.0,
             "{name}: still black after {frames} frames, so there is no picture to correct"
         );
 
         write_png(&format!("colour-{name}-off"), GBA_W, GBA_H, &off);
+        write_png(&format!("colour-{name}-light"), GBA_W, GBA_H, &light);
         write_png(&format!("colour-{name}-on"), GBA_W, GBA_H, &on);
         let (w, h, both) = side_by_side(&off, &on, 3);
         write_png(&format!("colour-{name}-side-by-side"), w, h, &both);
 
         let (a, b) = (mean_rgb(&off), mean_rgb(&on));
-        let (sat_off, sat_on) = (mean_saturation(&off), mean_saturation(&on));
+        let (sat_off, sat_light, sat_on) = (
+            mean_saturation(&off),
+            mean_saturation(&light),
+            mean_saturation(&on),
+        );
         println!(
-            "{name}: off mean {a:.1?} sat {sat_off:.1}  on mean {b:.1?} sat {sat_on:.1}  \
+            "{name}: off mean {a:.1?} sat {sat_off:.1}  light sat {sat_light:.1}  on mean {b:.1?} sat {sat_on:.1}  \
              changed {:.1}%",
             share_changed(&off, &on) * 100.0
         );
@@ -270,6 +308,8 @@ fn colour_correction_changes_the_picture_on_every_platform() {
             "{name}: the picture is byte for byte identical with correction on and off, so \
              either the option never reached the core or it does nothing worth a row"
         );
+        assert_ne!(off, light, "{name}: light is identical to off");
+        assert_ne!(light, on, "{name}: light is identical to on");
         let changed = share_changed(&off, &on);
         assert!(
             changed > 0.5,
@@ -277,9 +317,8 @@ fn colour_correction_changes_the_picture_on_every_platform() {
             changed * 100.0
         );
         assert!(
-            sat_on < sat_off,
-            "{name}: correction did not wash the picture out: saturation {sat_off:.1} to \
-             {sat_on:.1}"
+            sat_light < sat_off && sat_on < sat_light,
+            "{name}: saturation did not step down from off ({sat_off:.1}) -> light ({sat_light:.1}) -> on ({sat_on:.1})"
         );
     }
 }
@@ -302,8 +341,24 @@ fn gbc_colour_correction_still_tints_a_gb_palette() {
     };
     let frames = frames_for("gb");
     let palette = Some(GbPalette::DEFAULT);
-    let off = picture(d.path(), &dylib, &rom, Platform::Gb, palette, false, frames);
-    let on = picture(d.path(), &dylib, &rom, Platform::Gb, palette, true, frames);
+    let off = picture(
+        d.path(),
+        &dylib,
+        &rom,
+        Platform::Gb,
+        palette,
+        ColourCorrection::Off,
+        frames,
+    );
+    let on = picture(
+        d.path(),
+        &dylib,
+        &rom,
+        Platform::Gb,
+        palette,
+        ColourCorrection::On,
+        frames,
+    );
     assert_ne!(
         on, off,
         "GBC correction left a Game Boy picture in a GB palette untouched"

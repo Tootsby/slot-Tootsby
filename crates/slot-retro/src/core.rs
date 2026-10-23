@@ -75,6 +75,24 @@ impl From<std::io::Error> for CoreError {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum LightColour {
+    Gba,
+    Gbc,
+}
+
+// Built at compile time by build.rs from src/light_lut.rs, so picking Light never stalls a frame.
+include!(concat!(env!("OUT_DIR"), "/light_lut.rs"));
+
+impl LightColour {
+    pub fn lut(self) -> &'static [u32; 65536] {
+        match self {
+            LightColour::Gba => &GBA_LIGHT_LUT,
+            LightColour::Gbc => &GBC_LIGHT_LUT,
+        }
+    }
+}
+
 pub trait RetroCore: Send {
     fn load(&mut self, rom: &Path) -> Result<(), CoreError>;
     fn run_frame(&mut self, input: ButtonMask);
@@ -82,6 +100,7 @@ pub trait RetroCore: Send {
         self.run_frame(p1);
     }
     fn set_option(&mut self, _key: &str, _value: &str) {}
+    fn set_light_colour(&mut self, _light: Option<LightColour>) {}
     fn set_frame_skip(&mut self, _skip: bool) {}
     fn video_xrgb8888(&self) -> &[u8];
     fn take_audio(&mut self) -> Vec<i16>;
@@ -150,5 +169,55 @@ mod tests {
         let mut core = Recorder::default();
         core.run_frame_linked(ButtonMask(ButtonMask::A), ButtonMask(ButtonMask::B));
         assert_eq!(core.0, vec![ButtonMask(ButtonMask::A)]);
+    }
+
+    #[test]
+    fn light_colour_lut_sits_between_raw_and_full_correction() {
+        for mode in [LightColour::Gba, LightColour::Gbc] {
+            let lut = mode.lut();
+            assert_eq!(lut[0], 0, "black stays black");
+            let pure_green = 0x07e0usize;
+            let px = lut[pure_green];
+            let r = (px >> 16) & 0xff;
+            let g = (px >> 8) & 0xff;
+            let b = px & 0xff;
+            assert!(
+                g > 200 && g < 255,
+                "{mode:?}: pure green channel should be tamed below 255 but stay bright: {g}"
+            );
+            assert!(
+                r > 0 && b > 0,
+                "{mode:?}: pure green should bleed slightly into r ({r}) and b ({b})"
+            );
+        }
+        assert_ne!(
+            LightColour::Gba.lut()[0x4210],
+            LightColour::Gbc.lut()[0x4210],
+            "GBA and GBC light LUTs should reflect their distinct gamma curves at mid-grey"
+        );
+    }
+
+    #[test]
+    fn the_baked_light_tables_match_the_maths_they_were_built_from() {
+        // Within one step per channel, in case a target's powf rounds differently from the
+        // build machine's.
+        use crate::light_lut::{light_entry, GBA_GAMMA_ADJ, GBC_GAMMA_ADJ};
+        for (mode, adj) in [
+            (LightColour::Gba, GBA_GAMMA_ADJ),
+            (LightColour::Gbc, GBC_GAMMA_ADJ),
+        ] {
+            let lut = mode.lut();
+            for (color, &baked) in lut.iter().enumerate() {
+                let want = light_entry(color, adj);
+                for shift in [0, 8, 16] {
+                    let a = (baked >> shift) & 0xff;
+                    let b = (want >> shift) & 0xff;
+                    assert!(
+                        a.abs_diff(b) <= 1,
+                        "{mode:?} entry {color:#06x}: baked {baked:#08x}, maths {want:#08x}"
+                    );
+                }
+            }
+        }
     }
 }

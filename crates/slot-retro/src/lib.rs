@@ -8,11 +8,13 @@ macro_rules! eprintln {
 mod core;
 mod ffi;
 mod libretro;
+#[cfg(test)]
+mod light_lut;
 mod link;
 mod mock;
 mod rumble;
 
-pub use core::{AvInfo, ButtonMask, CoreError, RetroCore, GBA_H, GBA_W};
+pub use core::{AvInfo, ButtonMask, CoreError, LightColour, RetroCore, GBA_H, GBA_W};
 pub use ffi::{
     NETPACKET_BROADCAST, NETPACKET_FLUSH_HINT, NETPACKET_RELIABLE, NETPACKET_UNRELIABLE,
     NETPACKET_UNSEQUENCED,

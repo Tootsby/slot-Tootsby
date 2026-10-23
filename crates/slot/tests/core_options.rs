@@ -2,7 +2,7 @@ mod common;
 
 use slot::link_kind::{serial_option, LinkKind};
 use slot_retro::LibretroCore;
-use slot_store::{Core, Platform};
+use slot_store::{ColourCorrection, Core, Platform};
 
 fn dylib_for(core: Core) -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -64,7 +64,7 @@ fn every_option_slot_sets_is_one_the_core_declares() {
         }
         for serial in every_serial_mode() {
             for bios in [false, true] {
-                for (colour, platform) in [false, true]
+                for (colour, platform) in ColourCorrection::ALL
                     .into_iter()
                     .flat_map(|c| Platform::ALL.map(|p| (c, p)))
                 {
@@ -85,7 +85,7 @@ fn every_option_slot_sets_is_one_the_core_declares() {
                         every_option_is_one_the_core_has(
                             &core,
                             &format!(
-                                "{} {platform:?} serial={serial} bios={bios} colour={colour} \
+                                "{} {platform:?} serial={serial} bios={bios} colour={colour:?} \
                                  palette={palette:?}",
                                 which.as_str()
                             ),
@@ -179,7 +179,7 @@ fn a_named_palette_forces_a_plain_game_boy_without_hardware_presets() {
         Platform::Gb,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         Some(slot_store::GbColors::Palette(p)),
     );
@@ -205,7 +205,7 @@ fn a_named_palette_forces_a_plain_game_boy_without_hardware_presets() {
         Platform::Gb,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         None,
     );
@@ -299,7 +299,7 @@ fn an_original_game_boy_game_runs_on_the_plain_model_with_auto() {
         Platform::Gb,
         "auto",
         false,
-        false,
+        ColourCorrection::Off,
         slot_store::Blending::Off,
         Some(slot_store::GbColors::Auto),
     );
@@ -334,7 +334,7 @@ fn mgba_always_answers_the_game_boy_player_logo() {
             Platform::Gb,
             "auto",
             false,
-            false,
+            ColourCorrection::Off,
             slot_store::Blending::Off,
             palette,
         );

@@ -65,7 +65,7 @@ fn shipped(root: &Path, dylib: &Path, rom: &Path, palette: Option<GbPalette>) ->
         Core::Mgba,
         Platform::Gb,
         "auto",
-        false,
+        slot_store::ColourCorrection::Off,
         palette.map(slot_store::GbColors::Palette),
         std::slice::from_ref(&dylib.to_path_buf()),
     );

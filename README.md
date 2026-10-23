@@ -33,6 +33,7 @@ This is a personal fork of upstream `slot` (currently synced to **v1.8.1**). I p
 - **Extra Dim**: a toggle under **Settings → Screen → General** (and on the in-game Screen page) that darkens the picture further than the backlight can go.
 - **Sharp-Shimmerless shader**: an extra shader option for each platform, for crisp scaling without shimmer at non-integer sizes.
 - **Frame Blending**: a per-platform row under **Screen → GBA / GBC / GB** that smooths the 30 Hz flicker some games use for transparency.
+- **Color Correction: Light**: each platform's Color Correction row (and `SELECT + Y` in game) now steps **Off / Light / On**. Light sits halfway between the raw picture and the full GBA/GBC screen correction, for colours that are less washed out than On but less harsh than Off.
 
 ### Controls
 - **Alternate A/B and L/R** buttons that can be bound alongside the main ones.

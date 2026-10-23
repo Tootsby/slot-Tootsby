@@ -8,8 +8,8 @@ use slot_power::{Battery, Charge, LedState, LidPolicy, Power, RepairResult};
 use slot_retro::LinkChannel;
 use slot_store::{
     format_stamp, parse_stamp, read_slot_state, scan, write_slot_state, BezelPick, Blending, Cart,
-    Core, GbColors, Platform, Recent, Shader, SlotState, StateEntry, StateRing, WallpaperPick,
-    WallpaperTint, BLUE_LIGHT_MAX, BRIGHTNESS_MAX, FF_SPEEDS, RING_MAX, VOLUME_MAX,
+    ColourCorrection, Core, GbColors, Platform, Recent, Shader, SlotState, StateEntry, StateRing,
+    WallpaperPick, WallpaperTint, BLUE_LIGHT_MAX, BRIGHTNESS_MAX, FF_SPEEDS, RING_MAX, VOLUME_MAX,
 };
 use slot_ui::{
     board_from, board_zoom, draw_empty_slot, draw_footer, draw_ground, draw_slot_name,
@@ -384,7 +384,7 @@ pub struct App {
     vol_before: Vec<(u8, bool, Millis)>,
     snapshot: Option<Box<dyn Snapshot>>,
     core: Core,
-    colour_pending: Option<bool>,
+    colour_pending: Option<ColourCorrection>,
     blending_pending: Option<Blending>,
     palette_live: bool,
     palette_pending: Option<GbColors>,
@@ -977,11 +977,13 @@ impl App {
             QuickRow::FastForward => QuickValue::speed(self.state.ff_speed),
             QuickRow::FastForwardSound => Some(QuickValue::flag(self.state.ff_sound)),
             QuickRow::GbaColourCorrection => {
-                Some(QuickValue::flag(self.state.colour_correction_gba))
+                Some(colour_correction_value(self.state.colour_correction_gba))
             }
-            QuickRow::GbColourCorrection => Some(QuickValue::flag(self.state.colour_correction_gb)),
+            QuickRow::GbColourCorrection => {
+                Some(colour_correction_value(self.state.colour_correction_gb))
+            }
             QuickRow::GbcColourCorrection => {
-                Some(QuickValue::flag(self.state.colour_correction_gbc))
+                Some(colour_correction_value(self.state.colour_correction_gbc))
             }
             QuickRow::GbaShader => Some(shader_value(self.state.shader_gba)),
             QuickRow::GbShader => Some(shader_value(self.state.shader_gb)),
@@ -2084,7 +2086,7 @@ impl App {
         }
     }
 
-    pub fn colour_correction(&self) -> bool {
+    pub fn colour_correction(&self) -> ColourCorrection {
         self.colour_correction_for(self.playing_platform())
     }
 
@@ -2092,7 +2094,7 @@ impl App {
         self.seated_cart().map_or(self.platform, |c| c.platform)
     }
 
-    pub fn colour_correction_for(&self, platform: Platform) -> bool {
+    pub fn colour_correction_for(&self, platform: Platform) -> ColourCorrection {
         match platform {
             Platform::Gba => self.state.colour_correction_gba,
             Platform::Gb => self.state.colour_correction_gb,
@@ -2221,7 +2223,7 @@ impl App {
         self.link_player
     }
 
-    pub fn take_colour_correction(&mut self) -> Option<bool> {
+    pub fn take_colour_correction(&mut self) -> Option<ColourCorrection> {
         self.colour_pending.take()
     }
 
@@ -2794,15 +2796,15 @@ impl App {
             }
             QuickRow::FastForwardSound => s.ff_sound = !s.ff_sound,
             QuickRow::GbaColourCorrection => {
-                s.colour_correction_gba = !s.colour_correction_gba;
+                s.colour_correction_gba = s.colour_correction_gba.step(right);
                 self.colour_pending = Some(self.colour_correction());
             }
             QuickRow::GbColourCorrection => {
-                s.colour_correction_gb = !s.colour_correction_gb;
+                s.colour_correction_gb = s.colour_correction_gb.step(right);
                 self.colour_pending = Some(self.colour_correction());
             }
             QuickRow::GbcColourCorrection => {
-                s.colour_correction_gbc = !s.colour_correction_gbc;
+                s.colour_correction_gbc = s.colour_correction_gbc.step(right);
                 self.colour_pending = Some(self.colour_correction());
             }
             QuickRow::GbaBlending => {
@@ -2991,8 +2993,9 @@ impl App {
             };
             self.change_setting(row, true);
             let said = match self.colour_correction() {
-                true => Toast::ColourOn,
-                false => Toast::ColourOff,
+                ColourCorrection::On => Toast::ColourOn,
+                ColourCorrection::Light => Toast::ColourLight,
+                ColourCorrection::Off => Toast::ColourOff,
             };
             self.hud.toast(said, self.now());
             return true;
@@ -5610,6 +5613,14 @@ fn shader_value(shader: Shader) -> QuickValue {
         Shader::Dot => QuickValue::Dot,
         Shader::Simpletex => QuickValue::Simpletex,
         Shader::Shimmerless => QuickValue::Shimmerless,
+    }
+}
+
+fn colour_correction_value(colour: ColourCorrection) -> QuickValue {
+    match colour {
+        ColourCorrection::Off => QuickValue::Off,
+        ColourCorrection::Light => QuickValue::Light,
+        ColourCorrection::On => QuickValue::On,
     }
 }
 
