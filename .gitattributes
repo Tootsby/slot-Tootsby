@@ -6,3 +6,7 @@ cores/**/*.patch -text
 # These run under the device's /bin/sh. A CRLF checkout (Windows autocrlf) leaves a \r on the
 # shebang and on every command, and the frontend never starts.
 *.sh text eol=lf
+
+# AI workflow notes for this fork. Kept out of GitHub's "Source code" downloads.
+AGENTS.md export-ignore
+GEMINI.md export-ignore
