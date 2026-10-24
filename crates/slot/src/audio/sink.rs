@@ -25,4 +25,7 @@ impl std::error::Error for AudioError {}
 pub trait AudioSink: Send {
     fn open(&mut self, sample_rate: u32) -> Result<(), AudioError>;
     fn ring(&self) -> Arc<Ring>;
+    /// Fades out whatever is playing and closes the device, for a power off or a restart that
+    /// never returns to drop the sink. Cut off mid-sound instead, the speaker pops.
+    fn close(&mut self) {}
 }

@@ -84,6 +84,11 @@ impl Session {
         ring.mix(&samples);
     }
 
+    /// Fades out and closes the audio device before a power off or a restart.
+    pub fn close_audio(&mut self) {
+        self.sink.close();
+    }
+
     pub fn audio_queued(&self) -> usize {
         self.sink.ring().queued_frames()
     }

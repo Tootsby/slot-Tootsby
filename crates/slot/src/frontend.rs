@@ -800,6 +800,7 @@ impl Frontend {
     }
 
     pub fn restart(&mut self) {
+        self.session.close_audio();
         self.session.app_mut().restart();
     }
 
@@ -808,10 +809,12 @@ impl Frontend {
     }
 
     pub fn repair(&mut self) {
+        self.session.close_audio();
         self.session.app_mut().repair();
     }
 
     pub fn poweroff(&mut self) {
+        self.session.close_audio();
         self.session.app_mut().poweroff();
     }
 
