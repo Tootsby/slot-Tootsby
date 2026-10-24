@@ -74,5 +74,9 @@ next use Antigravity.").
 - **Before tagging:** add a CHANGELOG.md section for the new version at the top. Run
   `task test` (and `task lint` if possible). Commit, push, then tag and push the tag.
 - Write commit messages in plain sentences, matching upstream's style.
+- **Keep AI and workspace files out of releases.** Release zips only contain the card tree
+  built by `task dist:device`. GitHub's "Source code" downloads skip any file marked
+  `export-ignore` in `.gitattributes`. Mark any new AI notes, plans or scratch files that way, or
+  keep them untracked. Never put them under `card/`, `licenses/` or `assets/`.
 - Target device: Anbernic RG SP (H700, aarch64) running BaseOS. Keep fork changes
   device-neutral unless Tootsby asks otherwise.
