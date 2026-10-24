@@ -1,6 +1,6 @@
 # slot (Tootsby fork)
 
-A bespoke, Game Boy-centric frontend for the **Anbernic RG SP** and other H700 handhelds, forked from [Brandon Kowalski's `slot`](https://github.com/BrandonKowalski/slot) (`v1.8.1`).
+A bespoke, Game Boy-centric frontend for the **Anbernic RG SP** and other H700 handhelds, forked from [Brandon Kowalski's `slot`](https://github.com/BrandonKowalski/slot) (`v1.9.0`).
 
 Supports **GBA**, **GBC**, and **GB** games.
 
@@ -26,7 +26,7 @@ A full user guide for the base project can be found at [slot-cfw.fyi](https://sl
 
 # What this fork adds
 
-This is a personal fork of upstream `slot` (currently synced to **v1.8.1**). I play on an Anbernic RG SP, but the fork deliberately avoids device-specific tweaks so it stays easy to keep in sync with upstream and runs anywhere upstream does.
+This is a personal fork of upstream `slot` (currently synced to **v1.9.0**). I play on an Anbernic RG SP, but the fork deliberately avoids device-specific tweaks so it stays easy to keep in sync with upstream and runs anywhere upstream does.
 
 ### Screen
 - **Lower brightness for night play**: brightness has 15 steps instead of 9, starting from the panel's dimmest lit level (1/255).
@@ -37,7 +37,6 @@ This is a personal fork of upstream `slot` (currently synced to **v1.8.1**). I p
 
 ### Controls
 - **Alternate A/B and L/R** buttons that can be bound alongside the main ones.
-- **Screenshots** with `SELECT + X` in game, saved to `Screenshots/`.
 
 ### Power
 - **Lid Power Off → Off**: closing the lid can sleep indefinitely instead of powering off after a set time.

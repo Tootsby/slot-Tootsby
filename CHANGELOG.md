@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.9.0-tootsby.1](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.1): fork
+
+Synced with upstream 1.9.0, which adds Undo Save and Undo Load, a Screenshots gallery, GBA bezels on 4:3 screens, saves that reach the card sooner, and fixes for crashes and hangs. Its full notes are in the 1.9.0 section of CHANGELOG.md.
+
+- **Screenshots now use upstream's version.** Upstream 1.9.0 added its own screenshots (still `SELECT + X`), with a Screenshots gallery in the in-game menu, zoom and multi-select delete, so the fork's simpler version is gone. New shots are saved to `Screenshots/<platform>/<game>/`. Shots taken with an earlier fork release stay where they were, in `Screenshots/<platform>/`, but don't show in the gallery.
+- Release notes on GitHub now come straight from this changelog, so each release page matches its section here.
+- Everything else the fork adds is unchanged: 15-step brightness and Extra Dim, Sharp-Shimmerless, Frame Blending, Color Correction: Light, alternate A/B and L/R buttons, Lid Power Off → Off, lighter sleep and the six wallpapers.
+
+## [1.9.0](https://github.com/BrandonKowalski/slot/releases/tag/v1.9.0)
+
+- mGBA no longer crashes on an empty resume state, which a card repair can leave behind. Booting with that cart in the slot crashed slot every time.
+- Saves, states, settings and slot's log reach the card as soon as they are written, not up to 30 seconds later. That shrinks the window in which pressing reset or the battery dying can leave the card read-only. (#72, #144)
+- A game's own save is written to the card every minute while it plays. The resume state is written every 5 minutes instead of every minute.
+- If a game takes slot down while it loads, slot starts on the shelf next time instead of loading it again.
+- A core that stops answering no longer freezes slot. Saving waits at most 2 seconds for it, and ejecting at most 10 before slot restarts.
+- Caching New Labels no longer stays up forever on a label it cannot read. After 20 seconds without progress the shelf comes up, and a label that crashes its decoder is skipped.
+- GBA can use your own bezels on 640x480 devices. Add .png files to `Bezels/GBA` and pick one in Settings > Screen > Game Boy Advance > Bezel. On 720x480 devices a GBA game fills the screen, so there is no bezel.
+- A card repair no longer hangs on a card too damaged to check. Each step is given up on after a time limit, the repair reports that it failed, and the device restarts.
+- For 30 seconds after a save or a load, the in-game menu now offers Undo Save or Undo Load under Resume. This option is also accessible with X on the state switcher screen.
+
 ## [1.8.1-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.8.1-tootsby.2): fork
 
 - **Color Correction: Light.** Each platform's Color Correction row, and `SELECT + Y` in game, now step Off, Light and On. Light is halfway between the raw picture and the full GBA/GBC correction. It works the same on mGBA and gpSP, on every device, and shows in save state thumbnails.
@@ -15,6 +35,7 @@ Synced with upstream 1.8.1 (notes below), and trimmed the fork back to changes t
 - **Removed** turning off the USB host controllers and unloading the Wi-Fi driver at boot. Their battery savings were never measured, and the Wi-Fi unload meant Link play had to reload the driver first.
 - **Kept** the lighter sleep (no drawing while dozing), now as a small branch in the main loop instead of a second copy of it.
 - Upstream's fix for the BaseOS startup sound (#135) is applied to this fork's audio thread.
+
 ## [1.8.1](https://github.com/BrandonKowalski/slot/releases/tag/v1.8.1)
 
 - Game Boy games on an MBC2 cartridge, such as Kirby's Pinball Land, no longer freeze after the boot screen. mGBA crashed on the first read of their save RAM; slot now builds it with upstream's fix. (#137)

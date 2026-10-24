@@ -39,22 +39,3 @@ fn a_toast_goes_away_on_its_own() {
     a.tick_ms(1_000 + HUD_MS);
     assert_eq!(a.toast(), None);
 }
-
-#[test]
-fn a_screenshot_hotkey_writes_a_png_and_says_screenshot_saved() {
-    let d = tmp_root_with_carts(&["Emerald"]);
-    let mut a = app_playing_in(d.path(), "Emerald");
-    a.apply_at(Action::Screenshot, 1_000);
-    assert_eq!(a.toast(), Some(Toast::ScreenshotSaved));
-    let shots_dir = d.path().join("Screenshots/GBA");
-    let files: Vec<_> = std::fs::read_dir(&shots_dir)
-        .expect("Screenshots/GBA dir")
-        .filter_map(|e| e.ok())
-        .collect();
-    assert_eq!(files.len(), 1, "expected 1 screenshot file, got {files:?}");
-    let name = files[0].file_name().to_string_lossy().into_owned();
-    assert!(
-        name.starts_with("Emerald-") && name.ends_with(".png"),
-        "unexpected screenshot filename {name}"
-    );
-}

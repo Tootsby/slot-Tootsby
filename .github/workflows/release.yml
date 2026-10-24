@@ -72,6 +72,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
       - uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.zip }}
@@ -82,26 +87,17 @@ jobs:
           ZIP: ${{ needs.build.outputs.zip }}
         run: |
           set -eu
-          cat > notes.md <<NOTES
-          ## ${GITHUB_REF_NAME}
-
-          Personal fork of [slot](https://github.com/BrandonKowalski/slot), synced to upstream **1.8.1**. Full notes are in [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md).
-
-          **This release**
-          - Includes everything in upstream 1.8.1: Load State on Insert, Fast Forward can be Off, smaller save states, the MBC2 crash fix, and the BaseOS startup sound fix.
-          - Removed the RG SP / RG34XXSP display calibration. Use Color Correction instead.
-          - Removed the CPU governor, USB and Wi-Fi power tweaks. slot now leaves these as BaseOS sets them, like upstream.
-
-          **What the fork adds**
-          - 15-step brightness down to 1/255, plus an Extra Dim toggle
-          - Sharp-Shimmerless shader and per-platform Frame Blending
-          - Alternate A/B and L/R buttons, \`SELECT + X\` screenshots
-          - Lid Power Off -> Off, and no drawing while dozing
-          - Six bundled 720x480 wallpapers
-
-          Credits: Brandon Kowalski (slot), Markus (art), @pvaibhav (BaseOS), @suprsomething (slot.advance).
+          awk -v head="## [${GITHUB_REF_NAME#v}]" '
+            index($0, head) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > notes.md
+          test -s notes.md
+          cat >> notes.md <<NOTES
 
           ---
+          Personal fork of [slot](https://github.com/BrandonKowalski/slot) by Brandon Kowalski. Each fork release is synced to the upstream version in its tag, and [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) lists what the fork adds. Credits: Markus (art), @pvaibhav (BaseOS), @suprsomething (slot.advance).
+
           Unzip and copy the contents of \`slot-${GITHUB_REF_NAME}/\` onto SD2.
 
           Emulation by mGBA (MPL-2.0) and gpSP (GPL-2.0). Their licences, patches and gpSP's source are in \`System/licenses/\`.

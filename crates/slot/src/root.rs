@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
 
-pub const DIRS: [&str; 28] = [
+pub const DIRS: [&str; 25] = [
     "BIOS",
     "Bezels",
+    "Bezels/GBA",
     "Bezels/GB",
     "Bezels/GBC",
     "Config",
@@ -19,10 +20,6 @@ pub const DIRS: [&str; 28] = [
     "Saves/GBA",
     "Saves/GB",
     "Saves/GBC",
-    "Screenshots",
-    "Screenshots/GBA",
-    "Screenshots/GB",
-    "Screenshots/GBC",
     "States",
     "States/GBA",
     "States/GB",
@@ -93,8 +90,4 @@ pub fn logs_dir(root: &Path) -> PathBuf {
 
 pub fn saves_dir(root: &Path) -> PathBuf {
     root.join("Saves")
-}
-
-pub fn screenshots_dir(root: &Path, platform: slot_store::Platform) -> PathBuf {
-    root.join("Screenshots").join(platform.dir_name())
 }
