@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.9.0-tootsby.3](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.3): fork
+
+- The audio code is back to upstream's, plus the power-off pop fix from 1.9.0-tootsby.2. The fork no longer plays a short stretch of silence when the speaker wakes after a quiet spell. That guarded against a crackle nobody could hear without run-ahead, and it kept the fork's audio code out of step with upstream. The first sound after a few seconds of quiet may now start a fraction sooner.
+
 ## [1.9.0-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.2): fork
 
 - Powering off or restarting during a game no longer pops the speaker. slot now fades the sound out and closes the audio device before it hands over to BaseOS, which had been cutting it off mid-sound. ([upstream #142](https://github.com/BrandonKowalski/slot/issues/142))
