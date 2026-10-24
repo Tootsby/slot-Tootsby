@@ -1,0 +1,43 @@
+name: tag
+
+# Releasing a fork build: put a new "## [X.Y.Z-tootsby.N](...)" section at the top of
+# CHANGELOG.md and push it to main. This tags the commit vX.Y.Z-tootsby.N and starts the
+# release workflow on that tag. A tag that already exists is left alone, and headings without
+# "-tootsby." (upstream's own versions) never tag anything.
+
+on:
+  push:
+    branches: [main]
+    paths: ['CHANGELOG.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tag and release the newest fork version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version="$(grep -m1 '^## \[' CHANGELOG.md | sed -E 's/^## \[([^]]+)\].*/\1/')"
+          case "$version" in
+            *-tootsby.*) ;;
+            *) echo "top of CHANGELOG is $version, not a fork release"; exit 0 ;;
+          esac
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists"
+            exit 0
+          fi
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          # Tags pushed with the workflow token don't start other workflows, so start the
+          # release on the tag directly.
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$tag"
