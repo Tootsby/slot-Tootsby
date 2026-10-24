@@ -68,11 +68,19 @@ next use Antigravity.").
   that overlaps a fork feature, prefer upstream's version and re-apply the fork's tweaks on top.
 - Remotes: `origin` (this fork), `upstream` (BrandonKowalski/slot). `pvaibhav` and
   `suprsomething` are where some borrowed features came from.
-- **Versions and tags:** `v<upstream version>-tootsby.<n>`, e.g. `v1.9.0-tootsby.1`. Pushing a
-  `v*` tag runs `.github/workflows/release.yml`, which builds the H700 card zip and publishes
-  the GitHub release.
-- **Before tagging:** add a CHANGELOG.md section for the new version at the top. Run
-  `task test` (and `task lint` if possible). Commit, push, then tag and push the tag.
+- **Versions:** `<upstream version>-tootsby.<n>`, e.g. `1.9.0-tootsby.1`, tagged `v1.9.0-tootsby.1`.
+- **Releasing:** add a `## [X.Y.Z-tootsby.N](https://github.com/Tootsby/slot-Tootsby/releases/tag/vX.Y.Z-tootsby.N): fork`
+  section at the top of CHANGELOG.md, run `task test` (and `task lint` if possible), commit and
+  push to `main`. `.github/workflows/tag.yml` then creates the tag and starts
+  `.github/workflows/release.yml`, which builds the H700 card zip. The GitHub release notes are
+  that CHANGELOG section plus a short fork footer. Don't push tags by hand. The cloud session
+  can't, and tag.yml already does it. Make every change you want in the release before that push.
+- In a merge from upstream, keep a fork section at the top of CHANGELOG.md, with upstream's
+  version section right below it.
+- **Cloud testing notes:** the cloud session can't download Rust 1.96, so it uses stable with
+  `RUSTUP_TOOLCHAIN=stable`. `slot-gfx`'s `pipeline` test and the `record` example only build on
+  macOS. `eject::an_unchanged_battery_save_is_not_rewritten` fails when run as root, which is
+  expected there.
 - Write commit messages in plain sentences, matching upstream's style.
 - **Keep AI and workspace files out of releases.** Release zips only contain the card tree
   built by `task dist:device`. GitHub's "Source code" downloads skip any file marked
