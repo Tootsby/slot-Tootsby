@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.9.0-tootsby.2](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.2): fork
+
+- Powering off or restarting during a game no longer pops the speaker. slot now fades the sound out and closes the audio device before it hands over to BaseOS, which had been cutting it off mid-sound. ([upstream #142](https://github.com/BrandonKowalski/slot/issues/142))
+
 ## [1.9.0-tootsby.1](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.1): fork
 
 Synced with upstream 1.9.0, which adds Undo Save and Undo Load, a Screenshots gallery, GBA bezels on 4:3 screens, saves that reach the card sooner, and fixes for crashes and hangs. Its full notes are in the 1.9.0 section of CHANGELOG.md.
