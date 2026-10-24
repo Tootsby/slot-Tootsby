@@ -24,3 +24,7 @@
 # Parallel implementation worktrees, never content.
 /.worktrees
 .superpowers/
+
+# Private AI workflow notes for this fork. Never committed.
+/AGENTS.md
+/GEMINI.md
