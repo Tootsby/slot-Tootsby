@@ -72,7 +72,7 @@ Same as upstream. I only test on the **Anbernic RG SP**.
 - **[Brandon Kowalski](https://github.com/BrandonKowalski/slot)**: creator of `slot`. Almost everything here is his work; see [slot-cfw.fyi](https://slot-cfw.fyi).
 - **[Markus (@MarkusMaribu)](https://github.com/MarkusMaribu)**: the skeuomorphic shelf, cart and bezel art.
 - **[Vaibhav (@pvaibhav)](https://github.com/pvaibhav/slot)**: BaseOS, and the audio buffer reuse adapted from his fork.
-- **[@suprsomething](https://github.com/suprsomething/slot.advance)**: the idea of not drawing while dozing, from `slot.advance`.
+- **[Dean Laufs (suprsomething)](https://github.com/suprsomething/slot.advance)**: the software standby code (`standby.rs`, no drawing while dozing), from `slot.advance`.
 - **mGBA** (MPL-2.0) and **gpSP** (GPL-2.0), the emulators doing the real work.
 
 ---

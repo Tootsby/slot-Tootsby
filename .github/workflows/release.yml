@@ -96,7 +96,7 @@ jobs:
           cat >> notes.md <<NOTES
 
           ---
-          Personal fork of [slot](https://github.com/BrandonKowalski/slot) by Brandon Kowalski. Each fork release is synced to the upstream version in its tag, and [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) lists what the fork adds. Credits: Markus (art), @pvaibhav (BaseOS), @suprsomething (slot.advance).
+          Personal fork of [slot](https://github.com/BrandonKowalski/slot) by Brandon Kowalski. Each fork release is synced to the upstream version in its tag, and [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md) lists what the fork adds. Credits: [Markus Maribu](https://github.com/MarkusMaribu) (art), [Prashant Vaibhav](https://github.com/pvaibhav) (BaseOS and audio buffer reuse), [Dean Laufs / suprsomething](https://github.com/suprsomething/slot.advance) (software standby).
 
           Unzip and copy the contents of \`slot-${GITHUB_REF_NAME}/\` onto SD2.
 
