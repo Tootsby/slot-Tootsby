@@ -42,6 +42,9 @@ This is a personal fork of upstream `slot` (currently synced to **v1.9.0**). I p
 - **Lid Power Off → Off**: closing the lid can sleep indefinitely instead of powering off after a set time.
 - **Lighter sleep**: while the lid is closed (or POWER was tapped) slot stops drawing frames to the dark screen and only listens for input.
 
+### Clock
+- **Keeps time while powered off**: the RG SP's clock chip runs slow while the device is off and can lose hours a day. slot saves the exact time at power off and corrects the clock at the next boot. The first time you fix the clock by hand after the device has been off for 3 hours or more, slot learns how much to correct by. Delete `Config/clock.txt` to start over.
+
 ### Wallpapers
 - Six bundled 720×480 wallpapers in `Wallpapers/`: three plain surfaces (Dark Walnut, Charcoal Ebony, Matte Slate) and three wood desks with some clutter on them (Tinkerer Workbench, Collector Desk, Late Night Study).
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0-tootsby.4](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.4): fork
+
+- **The clock keeps time while the device is off.** The clock chip in H700 devices like the RG SP runs off an inaccurate built-in oscillator while the device is off, and can lose hours a day. slot now saves the exact time when it powers off or restarts, and at the next boot it scales the time the chip counted by a learned rate.
+- slot learns the rate by itself. After a power off of 3 hours or more, set the clock right once in Settings > General > Date & Time, and later boots correct by that much. Each new correction by hand refines it.
+- The exact time is also copied into the clock chip at every power off and restart, so it no longer drifts during play.
+- Nothing changes until the clock has been set once. A crash or a flat battery is never taken for a clean power off. Delete `Config/clock.txt` to start over.
+
 ## [1.9.0-tootsby.3](https://github.com/Tootsby/slot-Tootsby/releases/tag/v1.9.0-tootsby.3): fork
 
 - The audio code is back to upstream's, plus the power-off pop fix from 1.9.0-tootsby.2. The fork no longer plays a short stretch of silence when the speaker wakes after a quiet spell. That guarded against a crackle nobody could hear without run-ahead, and it kept the fork's audio code out of step with upstream. The first sound after a few seconds of quiet may now start a fraction sooner.
