@@ -6,6 +6,7 @@ use slot_gfx::{Canvas, OUT_H, OUT_W};
 use slot_input::{Action, Btn, RawEvent, MENU_DOUBLE_TAP_MS, MUTE_CHORD_MS};
 use slot_power::{Battery, Charge, LedState, LidPolicy, Power, RepairResult};
 use slot_retro::LinkChannel;
+use slot_store::clock_drift;
 use slot_store::{
     format_stamp, parse_stamp, read_slot_state, scan, write_slot_state, BezelPick, Blending, Cart,
     ColourCorrection, Core, GbColors, Platform, Recent, Shader, ShotDir, ShotEntry, SlotState,
@@ -441,6 +442,7 @@ pub struct App {
     game_ready: bool,
     clock: f64,
     power: Option<Power>,
+    clock_boot: Option<slot_store::clock_drift::BootCorrection>,
     dozed_at: Millis,
     woke_on_press: bool,
     autosave_at: Millis,
@@ -650,6 +652,7 @@ impl App {
             game_ready: false,
             clock: 0.0,
             power: None,
+            clock_boot: None,
             dozed_at: 0,
             woke_on_press: false,
             autosave_at: AUTOSAVE_MS,
@@ -955,6 +958,9 @@ impl App {
         };
         let (moved, offset, from_menu) = (picker.secs() - *seed, picker.offset_min(), *from_menu);
         let utc = self.utc_secs() + moved;
+        if offset as i16 == self.state.utc_offset_min && moved != 0 {
+            self.learn_clock_rate(moved);
+        }
         if let Some(power) = &mut self.power {
             power.set_clock(utc);
         }
@@ -2171,6 +2177,7 @@ impl App {
         power.set_backlight(self.state.brightness);
         self.headphones = power.headphones();
         self.hud.set_headphones(self.headphones);
+        self.correct_clock_after_power_off(&mut power);
         let secs = power.now();
         if matches!(self.phase, Phase::SetClock { .. }) || secs < CLOCK_FLOOR {
             self.phase = clock_screen(secs, 0, false);
@@ -2187,6 +2194,79 @@ impl App {
         self.battery_at = self.now();
         self.charge_at = self.now();
         self.last_led = None;
+    }
+
+    /// The RTC loses time while the device is off. Scale what it counted since the last power
+    /// off by the rate learned so far, and move the clock to the result.
+    fn correct_clock_after_power_off(&mut self, power: &mut Power) {
+        let Some(root) = self.root.clone() else {
+            return;
+        };
+        let mut record = clock_drift::read_clock(&root);
+        let Some(off_at) = record.off_at.take() else {
+            return;
+        };
+        // Spent now, so a crash or a flat battery before the next power off is never taken
+        // for a clean one.
+        if let Err(e) = clock_drift::write_clock(&root, &record) {
+            eprintln!("slot: clock: {e}");
+        }
+        if !self.state.clock_set {
+            return;
+        }
+        let now = power.now();
+        let Some(boot) = clock_drift::correct_boot(off_at, now, record.rate) else {
+            eprintln!("slot: clock: the RTC reads before the last power off, leaving it");
+            return;
+        };
+        if boot.corrected != now {
+            power.set_clock(boot.corrected);
+        }
+        eprintln!(
+            "slot: clock: off for {} s by the RTC, moved {:+} s at rate {:.5}",
+            boot.rtc_off,
+            boot.corrected - now,
+            boot.rate
+        );
+        self.clock_boot = Some(boot);
+    }
+
+    /// The clock set by hand after a corrected boot tells how far off the correction was, and
+    /// so what the rate should have been.
+    fn learn_clock_rate(&mut self, error: i64) {
+        let (Some(boot), Some(root)) = (self.clock_boot.take(), self.root.clone()) else {
+            return;
+        };
+        let Some(rate) = clock_drift::learned_rate(&boot, error) else {
+            return;
+        };
+        let mut record = clock_drift::read_clock(&root);
+        record.rate = rate;
+        match clock_drift::write_clock(&root, &record) {
+            Ok(()) => {
+                eprintln!("slot: clock: learned rate {rate:.5} from a {error:+} s correction")
+            }
+            Err(e) => eprintln!("slot: clock: {e}"),
+        }
+    }
+
+    /// Before a power off or a restart: put the system time, which was kept by the main
+    /// crystal, into the RTC, and note when that was so the next boot can correct for the
+    /// time the RTC loses while off.
+    pub fn note_power_off(&mut self) {
+        if !self.state.clock_set {
+            return;
+        }
+        let (Some(power), Some(root)) = (&mut self.power, &self.root) else {
+            return;
+        };
+        let now = power.now();
+        power.sync_rtc();
+        let mut record = clock_drift::read_clock(root);
+        record.off_at = Some(now);
+        if let Err(e) = clock_drift::write_clock(root, &record) {
+            eprintln!("slot: clock: {e}");
+        }
     }
 
     fn copy_card_log(&self, power: &Power) {
@@ -2362,6 +2442,7 @@ impl App {
 
     pub fn restart(&mut self) {
         self.settle_saves();
+        self.note_power_off();
         if let Some(power) = &mut self.power {
             power.restart();
         }
@@ -2492,6 +2573,7 @@ impl App {
 
     pub fn poweroff(&mut self) {
         self.settle_saves();
+        self.note_power_off();
         if let Some(power) = &mut self.power {
             power.poweroff();
         }

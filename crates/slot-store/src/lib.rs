@@ -7,6 +7,7 @@ macro_rules! eprintln {
 
 mod atomic;
 mod bindings;
+pub mod clock_drift;
 pub mod cart_shell;
 mod config;
 mod core;

@@ -644,6 +644,13 @@ impl Platform for DevicePlatform {
         );
     }
 
+    fn sync_rtc(&mut self) {
+        ran(
+            "hwclock",
+            Command::new("hwclock").args(["-w", "-u"]).status(),
+        );
+    }
+
     fn relink_adb(&mut self) -> bool {
         let gadget = self.sysfs.join("kernel/config/usb_gadget/g1/UDC");
         if !gadget.is_file() {

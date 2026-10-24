@@ -64,6 +64,10 @@ pub trait Platform: Send {
     fn set_clock(&mut self, secs: i64);
     fn set_rumble(&mut self, strength: u16);
 
+    /// Copies the system time into the RTC. The RTC keeps time on its own oscillator, which
+    /// on the H700 drifts while the device is on as well as off.
+    fn sync_rtc(&mut self) {}
+
     fn relink_adb(&mut self) -> bool {
         false
     }
